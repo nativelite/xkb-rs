@@ -38,7 +38,9 @@ code points; three test keymaps) are listed in `THIRD-PARTY-NOTICES.md`.
 ## What is in 0.1 and what is not
 
 In: keysyms; the keymap text format as compositors send it; client state
-(`update_mask`); keysyms, text, consumed modifiers, repeat, LEDs.
+(`update_mask`); keysyms, text, consumed modifiers, repeat, LEDs; Compose
+(without it dead keys type nothing, and they are how most European layouts
+type accents).
 
 Out, with reasons:
 
@@ -86,11 +88,22 @@ own clients.
 | All 589 layouts and variants of xkeyboard-config 2.41, each with `us` as a second layout, 38 states | 107,091,059 | 0 |
 | Every keysym in the named ranges and the Unicode range: name, name back to number, code point; every character to keysym; 57 odd names | 9,370,424 | 0 |
 | Case, where the reference turns a character into a character | 1,900 | 0 |
+| Compose: the tables of 16 locales (the 19 asked for less the 3 neither library finds), entry by entry, then two states fed every sequence and a 20,000-round random walk per table, comparing status, text and keysym after each keysym | 3,309,866 | 0 |
+| Compose: a file with every construct of the syntax (escapes, modifiers, duplicate, longer and shorter sequences, ten and eleven keysyms, malformed lines) | 117,182 | 0 |
 
 Left out of the first two rows, and counted by the test: 212,900 comparisons
 on keys where the case policy above can change the answer, and 132 states
 where libxkbcommon 1.6.0 itself computes a layout one past the last (a
 negative layout that is a multiple of the layout count).
+
+Compose follows the reference's rules where the format leaves room: a
+sequence given again replaces only what the new line gives (a string alone
+keeps the earlier keysym), a longer sequence displaces the shorter one it
+extends, whatever follows the result keysym on a line is not looked at, and
+an explicitly empty string is the text. It differs in one place: a Compose
+file that is not UTF-8 (the `en_US` and `german` locales resolve to a
+Latin-1 one) is rejected whole by libxkbcommon; here its readable lines are
+kept.
 
 The same answers for three keymaps are recorded in `tests/fixtures/` and
 checked on every platform, so the Windows gate proves more than "it

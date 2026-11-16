@@ -20,3 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`update_mask`); per key the layout, level, keysyms, one keysym with the
   Caps Lock transformation, UTF-8 and UTF-32 with the Control
   transformation, consumed modifiers; active modifiers and LEDs.
+- `compose::Table`: X11 Compose files, from text, a file, or a locale
+  (`compose.dir`, `locale.alias`, `$XCOMPOSEFILE`, `$XDG_CONFIG_HOME/XCompose`,
+  `~/.XCompose`; `include` with `%L`, `%H`, `%S`). `compose::State`: feed
+  keysyms, get nothing / composing / composed / cancelled and the result's
+  text and keysym.

@@ -8,6 +8,8 @@
 //! - [`State`] holds the modifiers and layout the compositor reports and
 //!   says what a key means under them;
 //! - [`Keysym`] names keysyms and converts them to and from characters.
+//! - [`compose`] reads X11 Compose files and follows dead-key and Compose
+//!   sequences.
 //!
 //! ```
 //! use xkb::{Keymap, Keysym, State};
@@ -45,6 +47,7 @@
 //! compositor's side of the state (turning key presses into modifier
 //! changes).
 
+pub mod compose;
 mod keymap;
 mod keysym;
 mod keysym_table;
@@ -55,7 +58,7 @@ pub use keymap::{Component, Keycode, Keymap};
 pub use keysym::Keysym;
 pub use state::State;
 
-/// Why a keymap (or a Compose file) could not be read, and where.
+/// Why a keymap could not be read, and where.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Error {
     /// The line of the text, from 1.

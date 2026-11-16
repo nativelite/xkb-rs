@@ -6,6 +6,7 @@
 #![cfg(target_os = "linux")]
 
 use std::ffi::{c_char, c_int, c_void, CStr, CString};
+use xkb::compose;
 use xkb::{Component, Keymap, Keysym, State};
 
 #[link(name = "dl")]
@@ -87,6 +88,19 @@ reference! {
     fn xkb_utf32_to_keysym(u32) -> u32;
     fn xkb_keysym_to_upper(u32) -> u32;
     fn xkb_keysym_to_lower(u32) -> u32;
+    fn xkb_compose_table_new_from_locale(P, *const c_char, c_int) -> P;
+    fn xkb_compose_table_new_from_buffer(P, *const c_char, usize, *const c_char, c_int, c_int) -> P;
+    fn xkb_compose_table_iterator_new(P) -> P;
+    fn xkb_compose_table_iterator_next(P) -> P;
+    fn xkb_compose_table_entry_sequence(P, *mut usize) -> *const u32;
+    fn xkb_compose_table_entry_keysym(P) -> u32;
+    fn xkb_compose_table_entry_utf8(P) -> *const c_char;
+    fn xkb_compose_state_new(P, c_int) -> P;
+    fn xkb_compose_state_feed(P, u32) -> c_int;
+    fn xkb_compose_state_get_status(P) -> c_int;
+    fn xkb_compose_state_get_utf8(P, *mut c_char, usize) -> c_int;
+    fn xkb_compose_state_get_one_sym(P) -> u32;
+    fn xkb_compose_state_reset(P);
 }
 
 fn load() -> Option<Ref> {
@@ -796,3 +810,218 @@ const FIXTURE_MODS: [(u32, u32, u32); 12] = [
     (0x80, 0, 2),
     (0, 1, 0x10),
 ];
+
+fn status(s: compose::Status) -> c_int {
+    match s {
+        compose::Status::Nothing => 0,
+        compose::Status::Composing => 1,
+        compose::Status::Composed => 2,
+        compose::Status::Cancelled => 3,
+    }
+}
+
+/// Compare a table with the reference's: the same sequences with the same
+/// results, and two states fed the same keysyms agreeing after each.
+fn compare_compose(r: &Ref, label: &str, theirs: P, ours: &compose::Table, t: &mut Tally) {
+    // SAFETY (for the whole function): the table, its iterator, the entries
+    // it yields and the state are live while used, per the library's API.
+    unsafe {
+        let mut reference: Vec<(Vec<Keysym>, String, Keysym)> = Vec::new();
+        let it = (r.xkb_compose_table_iterator_new)(theirs);
+        loop {
+            let entry = (r.xkb_compose_table_iterator_next)(it);
+            if entry.is_null() {
+                break;
+            }
+            let mut n = 0usize;
+            let seq = (r.xkb_compose_table_entry_sequence)(entry, &mut n);
+            reference.push((
+                (0..n).map(|i| Keysym(*seq.add(i))).collect(),
+                text((r.xkb_compose_table_entry_utf8)(entry)).unwrap_or_default(),
+                Keysym((r.xkb_compose_table_entry_keysym)(entry)),
+            ));
+        }
+        reference.sort();
+        let mine: Vec<(Vec<Keysym>, String, Keysym)> = ours
+            .entries()
+            .map(|e| {
+                (
+                    e.sequence.to_vec(),
+                    e.text.unwrap_or("").to_string(),
+                    e.keysym,
+                )
+            })
+            .collect();
+        t.eq(mine.len(), reference.len(), || format!("{label} entries"));
+        for (m, th) in mine.iter().zip(&reference) {
+            t.eq(m, th, || format!("{label} entry"));
+        }
+
+        let st = (r.xkb_compose_state_new)(theirs, 0);
+        let mut state = compose::State::new(ours.clone());
+        let mut buf = [0 as c_char; 512];
+        let mut step = |sym: Keysym, state: &mut compose::State, t: &mut Tally, what: &str| {
+            (r.xkb_compose_state_feed)(st, sym.0);
+            state.feed(sym);
+            let theirs = (r.xkb_compose_state_get_status)(st);
+            t.eq(status(state.status()), theirs, || {
+                format!("{label} {what} after {} status", sym.name())
+            });
+            let n = (r.xkb_compose_state_get_utf8)(st, buf.as_mut_ptr(), buf.len());
+            let utf8: Vec<u8> = buf[..n.clamp(0, 511) as usize]
+                .iter()
+                .map(|&b| b as u8)
+                .collect();
+            t.eq(state.utf8().into_bytes(), utf8, || {
+                format!("{label} {what} after {} utf8", sym.name())
+            });
+            t.eq(
+                state.keysym(),
+                Keysym((r.xkb_compose_state_get_one_sym)(st)),
+                || format!("{label} {what} after {} keysym", sym.name()),
+            );
+        };
+        // Every sequence, from the start.
+        for (seq, ..) in &reference {
+            (r.xkb_compose_state_reset)(st);
+            state.reset();
+            for sym in seq {
+                step(*sym, &mut state, t, "sequence");
+            }
+        }
+        // A long walk without resets: starts of sequences cut off at random
+        // lengths, with keysyms from the table and a few others between.
+        if !reference.is_empty() {
+            let mut pool: Vec<Keysym> = reference
+                .iter()
+                .flat_map(|(s, ..)| s.iter().copied())
+                .collect();
+            pool.sort();
+            pool.dedup();
+            pool.extend([0xffe1, 0xffe9, 0xff7f, 0xfe03, 0x61, 0xff0d, 0].map(Keysym));
+            let mut seed = 0x2545_f491_4f6c_dd1du64;
+            let mut rnd = |n: usize| {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                (seed % n as u64) as usize
+            };
+            (r.xkb_compose_state_reset)(st);
+            state.reset();
+            for _ in 0..20_000 {
+                let (seq, ..) = &reference[rnd(reference.len())];
+                for sym in &seq[..rnd(seq.len() + 1)] {
+                    step(*sym, &mut state, t, "walk");
+                }
+                for _ in 0..rnd(3) {
+                    step(pool[rnd(pool.len())], &mut state, t, "walk");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn compose_tables_of_locales_match_the_reference() {
+    let Some(r) = load() else { return };
+    // SAFETY: no preconditions.
+    let ctx = unsafe { (r.xkb_context_new)(0) };
+    let mut t = Tally::default();
+    let paths = compose::Paths::from_env();
+    let mut tables = 0;
+    for locale in [
+        "en_US.UTF-8",
+        "C",
+        "C.UTF-8",
+        "POSIX",
+        "de_DE.UTF-8",
+        "el_GR.UTF-8",
+        "pt_BR.UTF-8",
+        "fi_FI.UTF-8",
+        "am_ET.UTF-8",
+        "cs_CZ.UTF-8",
+        "ru_RU.UTF-8",
+        "ja_JP.UTF-8",
+        "zh_CN.UTF-8",
+        "km_KH.UTF-8",
+        "sr_RS.UTF-8",
+        "th_TH.UTF-8",
+        "vi_VN.UTF-8",
+        "no_such_locale",
+        "",
+    ] {
+        let c = CString::new(locale).unwrap();
+        // SAFETY: the context is live and the locale NUL-terminated.
+        let theirs = unsafe { (r.xkb_compose_table_new_from_locale)(ctx, c.as_ptr(), 0) };
+        let ours = compose::Table::from_locale(locale, &paths);
+        t.eq(ours.is_ok(), !theirs.is_null(), || {
+            format!("{locale:?} found")
+        });
+        if let (Ok(ours), false) = (ours, theirs.is_null()) {
+            compare_compose(&r, locale, theirs, &ours, &mut t);
+            tables += 1;
+        }
+    }
+    // A locale whose Compose file is Latin-1: the reference gives the whole
+    // file up; here the lines whose strings are not UTF-8 are left out.
+    for locale in ["en_US", "german"] {
+        let c = CString::new(locale).unwrap();
+        // SAFETY: as above.
+        assert!(unsafe { (r.xkb_compose_table_new_from_locale)(ctx, c.as_ptr(), 0) }.is_null());
+        assert!(!compose::Table::from_locale(locale, &paths)
+            .unwrap()
+            .is_empty());
+    }
+    t.finish(&format!("compose, {tables} locale tables"));
+}
+
+#[test]
+fn compose_syntax_matches_the_reference() {
+    let Some(r) = load() else { return };
+    // SAFETY: no preconditions.
+    let ctx = unsafe { (r.xkb_context_new)(0) };
+    let mut t = Tally::default();
+    // Fewer than ten lines the reference calls errors: it gives up at ten.
+    let source = concat!(
+        "<a> <b> : \"1\"\n",
+        "<a> <b> : \"2\"\n",
+        "<c> <d> : \"short\"\n",
+        "<c> <d> <e> : \"long\"\n",
+        "<f> <g> <h> : \"long\"\n",
+        "<f> <g> : \"short\"\n",
+        "Ctrl <i> : \"mod\"\n",
+        "! Ctrl ~Shift <j> None <k> : \"mods\"\n",
+        "<l> : \"\\x41\\102\\\"\\\\\"\n",
+        "<m> : \"\\q\"\n",
+        "<n> : \"x\" y\n",
+        "<o> : y \"x\"\n",
+        "<p> : eacute\n",
+        "<q> : \"a\\x0b\\0c\"\n",
+        "<r> <r> <r> <r> <r> <r> <r> <r> <r> <r> : \"ten\"\n",
+        "<s> <s> <s> <s> <s> <s> <s> <s> <s> <s> <s> : \"eleven\"\n",
+        "<t> : \"a\" \"b\"\n",
+        "<u> : NoSuchSym\n",
+        "<NoSuch> : \"x\"\n",
+        "<v> \"x\"\n",
+        "<w> : \"\\777\\101\"\n",
+        "<x> : \"\u{e9}\" U00E9\n",
+        "<Multi_key> <Multi_key> : \"mm\"\n",
+        "<Shift_L> <y> : \"a modifier in the sequence\"\n",
+        "<z> : \"\"\n",
+        "<1> : \"\" x\n",
+        "  <2>\t:\t\"tabs\"   # comment\n",
+        "<3> : \"unterminated\n",
+        "<U1F600> <0x41> : \"names\"\n",
+        "<dead_acute> <e> : \"\u{e9}\" eacute\n",
+        "<dead_acute> <dead_acute> : \"\u{b4}\" acute\n",
+    );
+    let c = CString::new(source).unwrap();
+    let locale = CString::new("en_US.UTF-8").unwrap();
+    // SAFETY: the buffer is as long as said and the locale NUL-terminated.
+    let theirs = unsafe {
+        (r.xkb_compose_table_new_from_buffer)(ctx, c.as_ptr(), source.len(), locale.as_ptr(), 1, 0)
+    };
+    assert!(!theirs.is_null());
+    compare_compose(&r, "syntax", theirs, &compose::Table::parse(source), &mut t);
+    t.finish("compose, a file of every construct");
+}
