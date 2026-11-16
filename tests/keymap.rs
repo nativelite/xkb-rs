@@ -364,13 +364,18 @@ fn what_is_wrong_and_where() {
         let text = section("", "", "").replace(missing, "xkb_geometry");
         assert!(fails(&text).message.contains(missing), "{missing}");
     }
-    let e = fails(&section("type \"T\" { modifiers = Shift+Nope; };", "", ""));
-    assert_eq!((e.line, e.column), (3, 24), "{e}");
+    let e = fails(&section("virtual_modifiers V = Shift+Nope;", "", ""));
+    assert_eq!((e.line, e.column), (3, 13), "{e}");
     assert!(e.message.contains("Nope"), "{e}");
-    let e = fails(&section("type \"T\" { map[Shift] = Level0; };", "", ""));
-    assert_eq!(e.message, "expected a level");
-    let e = fails(&section("type \"T\" { map[Shift] = Level9999; };", "", ""));
-    assert_eq!(e.message, "expected a level");
+    let e = fails(&section("", "indicator \"x\" { modifiers = Nope; };", ""));
+    assert!(e.message.contains("Nope"), "{e}");
+    let e = fails(&section("", "indicator \"x\" { groups = Group0; };", ""));
+    assert_eq!(e.message, "expected a group");
+    let e = fails(&section("", "", "name[Group99] = \"x\";"));
+    assert_eq!(
+        (e.line, e.column, e.message.as_str()),
+        (5, 15, "expected a group")
+    );
     let e = fails(&section("virtual_modifiers Shift;", "", ""));
     assert!(e.message.contains("real modifier"), "{e}");
     let many: Vec<String> = (0..25).map(|i| format!("V{i}")).collect();
@@ -382,19 +387,8 @@ fn what_is_wrong_and_where() {
     assert_eq!(e.message, "too many virtual modifiers");
     let e = fails(&section("", "interpret Any+Sometimes(Shift) { };", ""));
     assert_eq!(e.message, "unknown interpret match");
-    let e = fails(&section(
-        "",
-        "interpret Any { virtualModifier = Shift; };",
-        "",
-    ));
+    let e = fails(&section("", "interpret.virtualModifier = Shift;", ""));
     assert!(e.message.contains("not a virtual modifier"), "{e}");
-    let e = fails(&section("", "", "key <A> { symbols[Group99] = [ a ] };"));
-    assert_eq!(
-        (e.line, e.column, e.message.as_str()),
-        (5, 25, "expected a group")
-    );
-    let e = fails(&section("", "", "key <A> { type = 5 };"));
-    assert_eq!(e.message, "expected a type name");
     let e = fails(&section("", "", "modifier_map Nope { <A> };"));
     assert!(e.message.contains("not a real modifier"), "{e}");
     let e = fails("xkb_keymap { xkb_keycodes { <A> = 0xffffffff; }; xkb_types { }; xkb_compatibility { }; xkb_symbols { }; };");
@@ -409,11 +403,16 @@ fn what_is_wrong_and_where() {
 fn what_is_merely_odd_is_let_through() {
     // A keysym nobody knows is no symbol; a type nobody defined is the
     // first one; an interpret for an unknown keysym matches nothing; a key
-    // defined twice keeps the later definition.
+    // defined twice is the two definitions merged, the later one winning
+    // where both say something; a field of a type, a key or an interpret
+    // that makes no sense is passed over.
     let k: Keymap = section(
-        "type \"FIRST\" { modifiers = Shift; map[Shift] = Level2; };",
-        "interpret NoSuchKeysym { repeat = True; };",
-        "key <A> { [ z ] }; key <A> { type = \"NoSuchType\", [ NoSuchKeysym, b, c ] }; key <B> { [ x ] };",
+        "type \"FIRST\" { modifiers = Shift; modifiers = Shift+Nope; map[Shift] = Level2; \
+         map[Shift] = Level0; map[Lock] = Level9999; };",
+        "interpret NoSuchKeysym { repeat = True; }; \
+         interpret z { virtualModifier = Shift; repeat = Perhaps; };",
+        "key <A> { [ z ] }; key <A> { type = \"NoSuchType\", [ NoSuchKeysym, b, c ] }; key <B> { [ x ] }; \
+         key <A> { symbols[Group99] = [ a ], type = 5 };",
     )
     .parse()
     .unwrap();
@@ -422,7 +421,8 @@ fn what_is_merely_odd_is_let_through() {
         2,
         "cut to the type's two levels"
     );
-    assert_eq!(k.key_syms_by_level(10, 0, 0), []);
+    assert_eq!(k.num_layouts_for_key(10), 1);
+    assert_eq!(k.key_syms_by_level(10, 0, 0), [sym("z")]);
     assert_eq!(k.key_syms_by_level(10, 0, 1), [sym("b")]);
     // A keymap whose sections are empty is a keymap without keys.
     let empty: Keymap =
@@ -435,7 +435,8 @@ fn what_is_merely_odd_is_let_through() {
             empty.max_keycode(),
             empty.num_layouts()
         ),
-        (0, 0, 0)
+        (8, 255, 0),
+        "what libxkbcommon answers for a keymap without keys"
     );
     let mut s = State::new(empty);
     s.update_mask(u32::MAX, u32::MAX, u32::MAX, 7, 7, 7);
@@ -453,7 +454,7 @@ fn a_keymap_cannot_ask_for_memory_out_of_proportion() {
         keys.push_str(&format!("key <K{i}> {{ type[Group32] = \"BIG\", [ a ] }};"));
     }
     let text = format!(
-        "xkb_keymap {{ xkb_keycodes {{ {codes} }}; xkb_types {{ type \"BIG\" {{ level_name[Level2048] = \"x\"; }}; }}; \
+        "xkb_keymap {{ xkb_keycodes {{ {codes} }}; xkb_types {{ type \"BIG\" {{ modifiers = Shift; map[Shift] = Level2048; }}; }}; \
          xkb_compatibility {{ }}; xkb_symbols {{ {keys} }}; }};"
     );
     assert_eq!(

@@ -1,0 +1,2287 @@
+=== BASE
+--- kc
+
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+
+--- types
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+
+=== auto types 1..4 levels
+--- sym
+
+    key <AD01> { [ q, Q ] }; key <AE01> { [ 1, exclam ] }; key <KP1> { [ KP_End, KP_1 ] }; key <KP2> { [ KP_Down, KP_2, a, b ] };
+    key <AD02> { [ e, E, EuroSign, cent ] }; key <AD03> { [ a, A, ae, AE ] }; key <AD04> { [ a, A, ae ] }; key <AD05> { [ r ] };
+    key <AD06> { [ 1, 2, 3 ] }; key <AD07> { [ a, A, NoSymbol, AE ] }; key <AD08> { [ NoSymbol, A ] };
+    key <AE02> { [ a, NoSymbol ] }; key <AE03> { [ a, A, NoSymbol, NoSymbol ] }; key <AE04> { [ ] }; key <AE05> { [ NoSymbol ] };
+    key <AE06> { [ {a, b}, {A, B} ] }; key <AE07> { [ Cyrillic_a, Cyrillic_A ] }; key <AE08> { [ Greek_alpha, Greek_ALPHA, a, A ] };
+
+=== auto types 5+ levels
+--- sym
+
+    key <AD01> { [ a, A, b, B, c ] }; key <AD02> { [ 1, 2, 3, 4, 5, 6, 7, 8 ] }; key <AD03> { [ KP_1, KP_2, KP_3, KP_4, KP_5 ] };
+
+=== auto types 5+ levels, first type has 8 levels
+--- sym
+
+    key <AD01> { [ a, A, b, B, c ] }; key <AD02> { [ 1, 2, 3, 4, 5, 6, 7, 8 ] };
+
+--- types
+
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+
+=== auto type name missing from types
+--- sym
+
+    key <AD01> { [ q, Q ] }; key <AE01> { [ 1, exclam ] }; key <AD02> { [ e, E, EuroSign, cent ] };
+
+--- types
+virtual_modifiers NumLock,Alt,LevelThree; type "ONLY" { modifiers = Control; map[Control] = Level2; };
+=== explicit unknown type
+--- sym
+
+    key <AD01> { type = "NOPE", [ q, Q ] }; key <AD02> { type[Group1] = "NOPE", symbols[Group1] = [ q, Q, w ] };
+
+=== key.type default statement
+--- sym
+
+    key.type = "ALPHABETIC";
+    key <AE01> { [ 1, exclam ] };
+    key.type[Group1] = "TWO_LEVEL";
+    key <AD01> { [ q, Q ] };
+    key <AD02> { [ w, W ], [ e, E ] };
+
+=== key.repeat default statement
+--- sym
+
+    key.repeat = no;
+    key <AE01> { [ 1, exclam ] };
+    key.repeat = yes;
+    key <AD01> { [ q, Q ] };
+
+=== key.groupsClamp default statement
+--- sym
+
+    key.groupsClamp = true;
+    key <AE01> { [ 1 ], [ 2 ], [ 3 ] };
+    key <AD01> { [ q, Q ], [ w, W ] };
+
+=== symbols for a group given twice
+--- sym
+
+    key <AD01> { symbols[Group1] = [ q, Q ], symbols[Group1] = [ w, W ] };
+
+=== type for a group given twice
+--- sym
+
+    key <AD01> { type[Group1] = "TWO_LEVEL", type[Group1] = "ALPHABETIC", symbols[Group1] = [ q, Q ] };
+
+=== key given twice
+--- sym
+
+    key <AD01> { [ q, Q ] };
+    key <AD01> { [ w ] };
+    key <AD02> { [ a, A ], [ b, B ] };
+    key <AD02> { symbols[Group2] = [ c ] };
+    key <AD03> { type = "TWO_LEVEL", [ a, A ] };
+    key <AD03> { repeat = no };
+
+=== modmap by keysym and by key, different modifiers
+--- sym
+
+    key <AD01> { [ Hyper_L, Super_L ] };
+    modifier_map Mod3 { <AD01> };
+    modifier_map Mod4 { Hyper_L };
+    key <AD02> { [ Super_R, Hyper_R ] };
+    modifier_map Mod3 { Super_R };
+    modifier_map Mod4 { Hyper_R };
+    key <AD03> { [ x ] };
+    modifier_map Mod3 { <AD03> };
+    modifier_map Mod4 { <AD03> };
+
+=== modmap forms
+--- sym
+
+    key <AD01> { [ Hyper_L ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] };
+    modMap Mod3 { <AD01> };
+    mod_map Mod4 { Super_R, <LatQ> };
+    modifier_map None { <AD03> };
+    modifier_map mod3 { y, Hyper_R, NoSuchSym, <NOPE> };
+
+=== modmap real modifier name in other case
+--- sym
+
+    key <AD01> { [ Hyper_L ] };
+    modifier_map SHIFT { <AD01> };
+
+=== modmap virtual modifier
+--- sym
+
+    key <AD01> { [ Hyper_L ] };
+    modifier_map NumLock { <AD01> };
+
+=== sets and NoSymbol
+--- sym
+
+    key <AD01> { [ { NoSymbol }, { a, NoSymbol }, { }, { a } ] };
+    key <AD02> { [ NoSymbol, a ] }; key <AD03> { [ a, VoidSymbol ] }; key <AD04> { [ any, none ] }; key <AD05> { [ NOSYMBOL, voidsymbol, Any, None ] };
+    key <AD06> { type = "TWO_LEVEL", [ { a, b }, { A, B } ] }; key <AD07> { type = "TWO_LEVEL", [ { dead_acute, a }, { Shift_L, a } ] };
+    key <AD08> { type = "CTRL", [ { c, d }, { e } ] };
+
+=== keysyms as numbers
+--- sym
+
+    key <AD01> { [ 1, 0x61, 97, 10 ] }; key <AD02> { [ 0x1000061, U0061, 0x1fffffff, 0 ] }; key <AD03> { [ 9, 0x9, 0x0, 0x20 ] };
+    key <AD04> { [ U20AC, U1F600, UD800, U110000 ] }; key <AD05> { [ 0x10FFFF, 0xff0d, 65293, XF86_AudioMute ] };
+
+=== keysym number past the largest
+--- sym
+
+    key <AD01> { [ 0x20000000, a ] }; key <AD02> { [ 4294967295, b ] }; key <AD03> { [ 4294967296, c ] };
+
+=== keysym number past 64 bits
+--- sym
+
+    key <AD01> { [ 99999999999999999999, a ] };
+
+=== unknown keysym names
+--- sym
+
+    key <AD01> { [ NoSuchSym, a ] }; key <AD02> { [ return, Return ] }; key <AD03> { [ nosuch ] };
+
+=== keywords in other case
+--- raw
+XKB_KEYMAP {
+XKB_KEYCODES "kc" {
+    MINIMUM = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    INDICATOR 1 = "Caps Lock"; INDICATOR 2 = "Num Lock"; INDICATOR 3 = "Scroll Lock";
+    ALIAS <LatQ> = <AD01>;
+};
+Xkb_Types "ty" {
+    VIRTUAL_MODIFIERS NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    TYPE "TWO_LEVEL" { MODIFIERS = Shift; MAP[Shift] = LEVEL2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+XKB_COMPAT "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    INTERPRET Num_Lock+ANYOF(ALL) { VIRTUALMODIFIER= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    INDICATOR "Caps Lock" { !allowExplicit; WHICHMODSTATE= LOCKED; MODIFIERS= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+XKB_SYMBOLS "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+
+    KEY <AD01> { TYPE = "ALPHABETIC", SYMBOLS[GROUP1] = [ q, Q ] };
+    Key <AD02> { Type[group1] = "TWO_LEVEL", Symbols[1] = [ w, W ], REPEAT = NO };
+    MODIFIER_MAP Mod3 { <AD01> };
+};
+};
+
+=== real modifier names in other case in a type
+--- sym
+key <AD01> { type = "X", [ q, Q ] };
+--- types+
+type "X" { modifiers = shift+LOCK; map[SHIFT] = Level2; };
+=== virtual modifier name in other case
+--- sym
+key <AD01> { type = "X", [ q, Q ] };
+--- types+
+type "X" { modifiers = numlock; map[NUMLOCK] = Level2; };
+=== sections ktc
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+ktc
+=== sections kts
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+kts
+=== sections kcs
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+kcs
+=== sections tcs
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+tcs
+=== sections s
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+s
+=== sections sckt
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+sckt
+=== sections tkcs
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+tkcs
+=== sections ktcsk
+--- sym
+key <AD01> { [ q, Q ] };
+--- order
+ktcsk
+=== no wrapper: symbols alone
+--- raw
+xkb_symbols "x" { key <AD01> { [ q, Q ] }; };
+
+=== no wrapper: four sections in a row
+--- raw
+xkb_keycodes "kc" {
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+};
+xkb_types "ty" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+xkb_compatibility "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+xkb_symbols "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+key <AD01> { [ q, Q ] };};
+
+=== xkb_semantics wrapper
+--- sym
+key <AD01> { [ q, Q ] };
+--- head
+xkb_semantics
+=== xkb_layout wrapper
+--- sym
+key <AD01> { [ q, Q ] };
+--- head
+xkb_layout
+=== flags
+--- raw
+default xkb_keymap "name" {
+xkb_keycodes "kc" {
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+};
+hidden xkb_types "ty" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+xkb_compatibility "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+default partial alphanumeric_keys modifier_keys xkb_symbols "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+key <AD01> { [ q, Q ] };};
+};
+
+=== two keymaps in one text
+--- raw
+xkb_keymap {
+xkb_keycodes "kc" {
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+};
+xkb_types "ty" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+xkb_compatibility "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+xkb_symbols "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+key <AD01> { [ q, Q ] };};
+};
+xkb_keymap {
+xkb_keycodes "kc" {
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+};
+xkb_types "ty" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+xkb_compatibility "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+xkb_symbols "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+key <AD01> { [ w, W ] };};
+};
+
+=== no semicolon after the keymap
+--- raw
+xkb_keymap {
+xkb_keycodes "kc" {
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+};
+xkb_types "ty" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+xkb_compatibility "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+xkb_symbols "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+key <AD01> { [ q, Q ] };};
+}
+=== geometry section
+--- raw
+xkb_keymap {
+xkb_keycodes "kc" {
+    minimum = 8; maximum = 255;
+    <AD01> = 24; <AD02> = 25; <AD03> = 26; <AD04> = 27; <AD05> = 28; <AD06> = 29; <AD07> = 30; <AD08> = 31;
+    <AE01> = 10; <AE02> = 11; <AE03> = 12; <AE04> = 13; <AE05> = 14; <AE06> = 15; <AE07> = 16; <AE08> = 17;
+    <LFSH> = 50; <RTSH> = 62; <LCTL> = 37; <CAPS> = 66; <NMLK> = 77; <LVL3> = 92; <LALT> = 64; <KP1> = 87; <KP2> = 88;
+    <RTRN> = 36; <BKSP> = 22; <TAB> = 23; <ESC> = 9; <DELE> = 119; <SPCE> = 65; <KPEN> = 104; <KPEQ> = 125;
+    indicator 1 = "Caps Lock"; indicator 2 = "Num Lock"; indicator 3 = "Scroll Lock";
+    alias <LatQ> = <AD01>;
+};
+xkb_types "ty" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    type "ONE_LEVEL" { modifiers = none; level_name[Level1] = "Any"; };
+    type "TWO_LEVEL" { modifiers = Shift; map[Shift] = Level2; };
+    type "ALPHABETIC" { modifiers = Shift+Lock; map[Shift] = Level2; map[Lock] = Level2; };
+    type "KEYPAD" { modifiers = Shift+NumLock; map[Shift] = Level2; map[NumLock] = Level2; };
+    type "FOUR_LEVEL" { modifiers = Shift+LevelThree; map[Shift] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; };
+    type "FOUR_LEVEL_ALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level4; map[Shift+Lock+LevelThree] = Level3; };
+    type "FOUR_LEVEL_SEMIALPHABETIC" { modifiers = Shift+Lock+LevelThree; map[Shift] = Level2; map[Lock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[Lock+LevelThree] = Level3; preserve[Lock+LevelThree] = Lock; map[Shift+Lock+LevelThree] = Level4; preserve[Shift+Lock+LevelThree] = Lock; };
+    type "FOUR_LEVEL_KEYPAD" { modifiers = Shift+NumLock+LevelThree; map[Shift] = Level2; map[NumLock] = Level2; map[LevelThree] = Level3; map[Shift+LevelThree] = Level4; map[NumLock+LevelThree] = Level4; map[Shift+NumLock+LevelThree] = Level3; };
+    type "EIGHT" { modifiers = Shift+Control+Mod1; map[Shift] = 2; map[Control] = 3; map[Shift+Control] = 4; map[Mod1] = 5; map[Shift+Mod1] = 6; map[Control+Mod1] = 7; map[Shift+Control+Mod1] = 8; };
+    type "CTRL" { modifiers = Control; map[Control] = Level2; };
+    type "CTRLP" { modifiers = Control+Shift; map[Control] = Level2; preserve[Control] = Control; map[Shift] = Level2; };
+    type "LOCKP" { modifiers = Lock+Shift; map[Lock] = Level2; preserve[Lock] = Lock; map[Shift] = Level2; };
+};
+xkb_compatibility "co" {
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; action= LockMods(modifiers=NumLock); };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; useModMapMods=level1; action= SetMods(modifiers=LevelThree,clearLocks); };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; action= SetMods(modifiers=modMapMods,clearLocks); };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Caps_Lock+AnyOfOrNone(all) { action= LockMods(modifiers=Lock); };
+    interpret Any+AnyOf(all) { action= SetMods(modifiers=modMapMods,clearLocks); };
+    indicator "Caps Lock" { !allowExplicit; whichModState= Locked; modifiers= Lock; };
+    indicator "Num Lock" { !allowExplicit; whichModState= Locked; modifiers= NumLock; };
+    indicator "Scroll Lock" { whichGroupState= Locked; groups= 0xfe; };
+};
+xkb_geometry "g" { width= 470; shape "NORM" { cornerRadius= 1, { [ 18, 18 ] }, { [ 2, 1 ], [ 16, 17 ] } }; section "Function" { top= 52; row { top= 1; keys { { <ESC>, color="grey20" }, { <FK01>, 20 } }; }; }; alias <AC00> = <CAPS>; };
+xkb_symbols "sy" {
+    key <LFSH> { [ Shift_L ] }; key <RTSH> { [ Shift_R ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    key <NMLK> { [ Num_Lock ] }; key <LVL3> { [ ISO_Level3_Shift ] }; key <LALT> { [ Alt_L, Meta_L ] };
+    modifier_map Shift { Shift_L, Shift_R }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+    modifier_map Mod1 { Alt_L }; modifier_map Mod2 { Num_Lock }; modifier_map Mod5 { ISO_Level3_Shift };
+key <AD01> { [ q, Q ] };};
+};
+
+=== string escapes in names
+--- sym
+
+    name[Group1] = "a\tb\101\"\\q\e\0\777\400z";
+    key <AD01> { type = "T\101", [ q, Q ] };
+
+--- types+
+type "TA" { modifiers = Control; map[Control] = Level2; };
+=== comments
+--- sym
+
+    // a comment
+    # another
+    key <AD01> { [ q, Q ] }; // trailing
+    key <AD02> { [ w, /* not a comment form */ W ] };
+
+=== comments 2
+--- sym
+
+    key <AD01> { [ q, Q ] }; # trailing # more
+    key <AD02> { [ w, W ] }; //
+
+=== group gaps
+--- sym
+
+    key <AD01> { symbols[Group2] = [ q, Q ] };
+    key <AD02> { symbols[Group3] = [ w, W ], symbols[Group1] = [ e ] };
+    key <AD03> { type[Group2] = "TWO_LEVEL", symbols[Group1] = [ a, A ] };
+    key <AD04> { type[Group3] = "TWO_LEVEL" };
+    key <AD05> { type = "ALPHABETIC", symbols[Group1] = [ a, A ], symbols[Group3] = [ b ] };
+    key <AD06> { [ a, A ], [ ], [ c ] };
+    key <AD07> { actions[Group2] = [ SetMods(modifiers=Shift) ], symbols[Group3] = [ a ] };
+    key <AD08> { symbols[Group1] = [ a, A ], actions[Group3] = [ NoAction() ] };
+    key <AE01> { type[Group1] = "ALPHABETIC", type[Group2] = "TWO_LEVEL", [ a, A ], [ b, B ] };
+    key <AE02> { symbols[Group4] = [ z ] };
+    name[Group1] = "one"; name[Group4] = "four"; groupName[2] = "two";
+
+=== out of range groups
+--- sym
+
+    key <AD01> { [ a ], [ b ], [ c ] };
+    key <AD02> { groupsClamp, [ a ], [ b ] };
+    key <AD03> { groupsRedirect = Group2, [ a ], [ b ] };
+    key <AD04> { groupsRedirect = 3, [ a ], [ b ] };
+    key <AD05> { clampGroups = yes, [ a ], [ b ] };
+    key <AD06> { !groupsClamp, [ a ], [ b ] };
+    key <AD07> { groupsClamp = no, groupsWrap, [ a ], [ b ] };
+    key <AD08> { groupsRedirect = 1, groupsClamp = false, [ a ], [ b ] };
+    key <AE01> { groupsClamp, groupsWrap = false, [ a ], [ b ] };
+    key <AE02> { redirectGroups = 2, [ a ] };
+    key <AE03> { wrapGroups, groupsClamp = True, groupsRedirect = Group1, !wrapGroups, [ a ], [ b ] };
+    key <AE04> { groupsClamp = 1, [ a ], [ b ] };
+
+=== indicators
+--- sym
+key <AD01> { [ q, Q ], [ w ] };
+--- kc+
+virtual indicator 5 = "Foo"; indicator 6 = "Six"; indicator 7 = "Seven"; indicator 8 = "Eight"; indicator 9 = "Nine"; indicator 10 = "Ten"; indicator 11 = "Eleven"; indicator 12 = "Twelve"; indicator 13 = "T13"; indicator 14 = "T14";
+--- compat+
+
+    indicator.allowExplicit = false;
+    indicator "Foo" { whichModState = None; modifiers = Lock; };
+    indicator "Six" { whichModState = Locked+Latched; modifiers = Shift+NumLock; };
+    indicator "Seven" { groups = All-Group1; };
+    indicator "Eight" { whichGroupState = Base; groups = Group2; };
+    indicator "Nine" { modifiers = Shift; groups = 2; whichGroupState = none; };
+    indicator "Ten" { whichModState = Any; modifiers = Control; };
+    indicator "Eleven" { whichModState = Compat; modifiers = Control; controls = MouseKeys; };
+    indicator "Twelve" { whichModState = Base; mods = Mod1; };
+    indicator "T13" { whichModState = 0; modifiers = Lock; };
+    indicator "T14" { whichGroupState = Effective; groups = !Group1; };
+    indicator "New One" { modifiers = Mod5; };
+
+=== indicator given twice and unnamed slots
+--- sym
+key <AD01> { [ q ] };
+--- kc+
+indicator 9 = "Caps Lock"; indicator 2 = "Other";
+--- compat+
+indicator "Fresh" { modifiers = Shift; }; indicator "Num Lock" { modifiers = Shift; };
+=== interpret forms
+--- sym
+
+    key <AD01> { [ a ] }; key <AD02> { [ b ] }; key <AD03> { [ c ] }; key <AD04> { [ d ] }; key <AD05> { [ e ] }; key <AD06> { [ f, g ] }; key <AD07> { [ g ], repeat = default }; key <AD08> { [ h ], repeat = No };
+    key <AE01> { [ i ], repeat = Yes }; key <AE02> { [ j ], repeat = true }; key <AE03> { [ k ], repeat = Default }; key <AE04> { [ l ], [ g ] };
+    key <AE05> { [ { g, g } ] }; key <AE06> { [ m ] }; key <AE07> { [ n ] }; key <AE08> { [ o ] };
+    modifier_map Shift { <AD02>, <AD03>, <AE08> }; modifier_map Lock { <AD04> }; modifier_map Mod3 { <AE06> };
+
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret.repeat = True;
+    interpret a { repeat = False; };
+    interpret b+Exactly(Shift) { repeat = False; virtualMod = NumLock; };
+    interpret c+Shift { repeat = False; virtualModifier = Alt; };
+    interpret d+NoneOf(Shift) { repeat = False; };
+    interpret e+AllOf(Shift+Lock) { repeat = False; };
+    interpret.repeat = False;
+    interpret g { repeat = True; useModMapMods = level1; virtualModifier = LevelThree; };
+    interpret 0x6d+AnyOfOrNone(Mod3) { repeat = True; };
+    interpret n+AnyOf(all) { repeat = True; };
+    interpret Any+Exactly(Shift) { repeat = True; virtualModifier = Alt; };
+    interpret Any + Any { repeat = False; };
+    interpret Shift_L { action= SetMods(modifiers=Shift,clearLocks); };
+    interpret Num_Lock+AnyOf(all) { virtualModifier= NumLock; };
+    interpret ISO_Level3_Shift+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+
+=== interpret given twice
+--- sym
+key <AD01> { [ a ] }; key <AD02> { [ b ] };
+--- compat+
+
+    interpret a { repeat = True; };
+    interpret a+AnyOfOrNone(all) { repeat = False; };
+    interpret b+AnyOf(Shift) { repeat = True; };
+    interpret b { repeat = True; };
+
+=== interpret for an unknown keysym
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret NoSuchSym { repeat = True; };
+=== interpret match with no argument
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret a+AnyOf() { repeat = True; };
+=== interpret unknown match
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret a+Sometimes(Shift) { repeat = True; };
+=== interpret virtual modifier that is real
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret a { virtualModifier = Shift; };
+=== interpret virtual modifier unknown
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret a { virtualModifier = Bogus; };
+=== interpret bare flags
+--- sym
+key <AD01> { [ a ] }; key <AD02> { [ b ] };
+--- compat+
+interpret a { repeat; }; interpret b { !repeat; }; interpret.repeat = True; 
+=== explicit actions on a key
+--- sym
+
+    key <AD01> { [ Num_Lock ], actions[Group1] = [ NoAction() ] };
+    key <AD02> { [ Num_Lock ] };
+    key <AD03> { [ a ], [ SetMods(modifiers=Shift) ] };
+    key <AD04> { [ ISO_Level3_Shift ], vmods = Alt };
+    key <AD05> { virtualMods = NumLock, [ b ] };
+    key <AD06> { [ c ], actions[Group2] = [ NoAction() ], repeat = yes };
+    key <AD07> { [ d ], [ { SetMods(modifiers=Shift), NoAction() } ] };
+    modifier_map Mod2 { <AD01> }; modifier_map Mod3 { <AD02>, <AD04> }; modifier_map Mod4 { <AD05> };
+
+=== virtual modifiers with an explicit mapping
+--- sym
+key <AD01> { type = "V", [ a, b ] }; key <AD02> { type = "W", [ a, b ] };
+--- types+
+virtual_modifiers Hyp = Mod3, Sup = 0x40, Both = Mod3+Mod4; type "V" { modifiers = Hyp; map[Hyp] = Level2; }; type "W" { modifiers = Both+Sup; map[Both] = Level2; };
+=== virtual modifier declared twice and in symbols
+--- sym
+virtual_modifiers Extra, NumLock; key <AD01> { [ a ], vmods = Extra }; modifier_map Mod3 { <AD01> };
+--- types+
+virtual_modifiers Alt, NumLock, Fresh;
+=== virtual modifier named as a real one
+--- sym
+key <AD01> { [ a ] };
+--- types+
+virtual_modifiers Shift;
+=== type entries
+--- sym
+
+    key <AD01> { type = "A", [ a, b, c, d ] }; key <AD02> { type = "B", [ a, b, c, d ] }; key <AD03> { type = "C", [ a, b, c, d ] }; key <AD04> { type = "D", [ a, b, c, d ] };
+    key <AD05> { type = "E", [ a, b, c, d ] }; key <AD06> { type = "F", [ a, b, c, d ] }; key <AD07> { type = "G", [ a, b, c, d ] }; key <AD08> { type = "H", [ a, b, c, d, e ] };
+    key <AE01> { type = "I", [ a, b, c, d ] }; key <AE02> { type = "J", [ a, b, c, d ] }; key <AE03> { type = "K", [ a, b, c ] }; key <AE04> { type = "L", [ a, b, c ] };
+
+--- types+
+
+    type "A" { modifiers = Shift; map[None] = Level2; map[Shift] = Level3; };
+    type "B" { modifiers = Shift; map[Shift+Lock] = Level2; map[Lock] = Level3; };
+    type "C" { modifiers = Shift+Lock; preserve[Shift] = Shift; map[Lock] = Level2; preserve[Lock] = Shift+Lock; };
+    type "D" { preserve[Shift] = Shift; map[Shift] = Level2; modifiers = Shift+Lock; map[Lock] = 3; };
+    type "E" { modifiers = Shift+Lock; map[Shift] = Level2; map[Shift] = Level3; map[Lock] = Level2; };
+    type "F" { modifiers = all; map[all] = Level2; map[0x1] = Level3; map[Shift+0x4] = Level4; };
+    type "G" { modifiers = Shift+Alt+NumLock; map[Alt] = Level2; map[Shift+Alt] = Level3; map[NumLock] = Level4; };
+    type "H" { modifiers = Shift; map[Shift] = Level2; level_name[Level5] = "five"; };
+    type "I" { modifiers = Shift+Lock; map[Shift] = Level2; map[Shift+Lock] = Level2; preserve[Shift+Lock] = Lock; };
+    type "J" { modifiers = !Shift; map[Lock] = Level2; map[Control+Lock] = 3; };
+    type "K" { modifiers = Shift+Lock-Lock; map[Shift] = Level2; map[Lock] = 3; };
+    type "L" { modifiers = Shift+Control; map[Shift] = Level2; preserve[Shift] = Control; preserve[Control] = Control; };
+
+=== type given twice
+--- sym
+key <AD01> { type = "A", [ a, b, c, d ] };
+--- types+
+type "A" { modifiers = Shift; map[Shift] = Level2; }; type "A" { modifiers = Lock; map[Lock] = Level3; };
+=== type level 0
+--- sym
+key <AD01> { [ a ] };
+--- types+
+type "A" { modifiers = Shift; map[Shift] = Level0; };
+=== type level as a bare number 0
+--- sym
+key <AD01> { [ a ] };
+--- types+
+type "A" { modifiers = Shift; map[Shift] = 0; };
+=== type level name string index
+--- sym
+key <AD01> { [ a ] };
+--- types+
+type "A" { modifiers = Shift; map[Shift] = Level2; level_name[2] = "x"; levelname[Level3] = "y"; };
+=== more syms than the type has levels, and fewer
+--- sym
+
+    key <AD01> { type = "TWO_LEVEL", [ a, b, c, d ] }; key <AD02> { type = "FOUR_LEVEL", [ a, b ] }; key <AD03> { type = "ONE_LEVEL", [ a, A ] };
+
+=== aliases
+--- sym
+
+    key <LatQ> { [ q, Q ] }; key <B2> { [ w ] }; key <C3> { [ e ] }; key <SELF> { [ r ] };
+    modifier_map Mod3 { <LatQ>, <B3> };
+
+--- kc+
+alias <B2> = <AD02>; alias <B3> = <B2>; alias <C3> = <NOPE>; alias <AD03> = <AD04>; alias <B2> = <AD05>; alias <SELF> = <SELF>;
+=== keycodes given twice
+--- sym
+
+    key <X1> { [ a ] }; key <X2> { [ b ] }; key <Y1> { [ c ] };
+
+--- kc+
+<X1> = 200; <X2> = 200; <Y1> = 201; <Y1> = 202;
+=== keycode 0 and above 255
+--- sym
+
+    key <Z0> { [ a ] }; key <Z9> { [ b ] }; key <Z7> { [ c ] };
+
+--- kc+
+<Z0> = 0; <Z9> = 300; <Z7> = 7;
+=== keycode below minimum or above maximum
+--- sym
+key <Z9> { [ b ] };
+--- kc
+minimum = 20; maximum = 30; <Z9> = 300; <Z1> = 10; <AD01> = 24;
+=== long key name
+--- sym
+key <ABCDEFGHIJ> { [ a ] };
+--- kc+
+<ABCDEFGHIJ> = 201;
+=== key name with punctuation
+--- sym
+key <A+B> { [ a ] }; key <"q"> { [ b ] }; key <1> { [ c ] }; key <> { [ d ] };
+--- kc+
+<A+B> = 201; <"q"> = 202; <1> = 203; <> = 204;
+=== caps and control
+--- sym
+
+    key <AD01> { type = "TWO_LEVEL", [ a, A ] }; key <AD02> { type = "ALPHABETIC", [ b, B ] }; key <AD03> { type = "LOCKP", [ c, d ] }; key <AD04> { type = "CTRL", [ e, f ] };
+    key <AD05> { type = "CTRLP", [ g, h ] }; key <AD06> { type = "ONE_LEVEL", [ ssharp ] }; key <AD07> { type = "ONE_LEVEL", [ U00E9 ] }; key <AD08> { type = "ONE_LEVEL", [ 0x10000e9 ] };
+    key <AE01> { type = "ONE_LEVEL", [ 2 ] }; key <AE02> { type = "ONE_LEVEL", [ 3 ] }; key <AE03> { type = "ONE_LEVEL", [ 7 ] }; key <AE04> { type = "ONE_LEVEL", [ 8 ] };
+    key <AE05> { type = "ONE_LEVEL", [ slash ] }; key <AE06> { type = "ONE_LEVEL", [ at ] }; key <AE07> { type = "ONE_LEVEL", [ asciitilde ] }; key <AE08> { type = "ONE_LEVEL", [ 9 ] };
+    key <RTRN> { [ Return ] }; key <BKSP> { [ BackSpace ] }; key <TAB> { [ Tab, ISO_Left_Tab ] }; key <ESC> { [ Escape ] }; key <DELE> { [ Delete ] }; key <SPCE> { [ space ] };
+    key <KPEN> { [ KP_Enter ] }; key <KPEQ> { [ KP_Equal ] }; key <KP1> { type = "ONE_LEVEL", [ KP_Space ] }; key <KP2> { type = "TWO_LEVEL", [ KP_Tab, KP_Multiply ] };
+
+=== control falls back to a latin layout
+--- sym
+
+    key <AD01> { type = "ALPHABETIC", [ Cyrillic_es, Cyrillic_ES ], [ c, C ] };
+    key <AD02> { type[Group1] = "ALPHABETIC", type[Group2] = "ONE_LEVEL", [ Cyrillic_ve, Cyrillic_VE ], [ d ] };
+    key <AD03> { type = "ALPHABETIC", [ c, C ], [ Cyrillic_es, Cyrillic_ES ] };
+    key <AD04> { type = "ALPHABETIC", [ Cyrillic_a, Cyrillic_A ], [ { f, g }, F ], [ h, H ] };
+    key <AD05> { type = "ALPHABETIC", [ eacute, Eacute ], [ adiaeresis, Adiaeresis ] };
+    key <AD06> { type[Group1] = "ALPHABETIC", type[Group2] = "CTRL", [ Cyrillic_a, Cyrillic_A ], [ x, y ] };
+    key <AD07> { type[Group1] = "CTRL", type[Group2] = "ALPHABETIC", [ Cyrillic_a, Cyrillic_A ], [ x, y ] };
+    key <AD08> { type = "ALPHABETIC", [ Cyrillic_a, Cyrillic_A ], [ NoSymbol, z ], [ 0x7f, k ] };
+    key <AE01> { type = "ALPHABETIC", [ Greek_alpha, Greek_ALPHA ], [ Return, Tab ] };
+    key <AE02> { type = "ALPHABETIC", groupsClamp, [ Cyrillic_a, Cyrillic_A ], [ m, M ] };
+    key <AE03> { type = "ALPHABETIC", [ { Cyrillic_a, Cyrillic_be }, Cyrillic_A ], [ m, M ] };
+
+=== level expressions
+--- sym
+key <AD01> { type = "A", [ a, b, c, d ] };
+--- types+
+type "A" { modifiers = Shift+Lock; map[Shift] = 1+1; map[Lock] = Level3; };
+=== group index expressions
+--- sym
+key <AD01> { symbols[1+1] = [ a ] };
+=== group index 0
+--- sym
+key <AD01> { symbols[Group0] = [ a ] };
+=== group index 5
+--- sym
+key <AD01> { symbols[Group5] = [ a ] };
+=== five bare groups
+--- sym
+key <AD01> { [ a ], [ b ], [ c ], [ d ], [ e ] };
+=== modifiers expressions
+--- sym
+key <AD01> { type = "A", [ a, b, c, d ] };
+--- types+
+type "A" { modifiers = Shift+(Lock); map[~Lock] = Level2; };
+=== include statement
+--- sym
+include "us"  key <AD01> { [ a ] };
+=== merge modes
+--- sym
+override key <AD01> { [ a ] }; augment key <AD01> { [ b, c ] }; replace key <AD02> { [ d ] }; augment key <AD02> { [ e, f ] };
+=== key body fields from xkbcomp
+--- sym
+
+    key <AD01> { type= "ALPHABETIC", symbols[Group1]= [ q, Q ], overlay1= <AD02>, radiogroup= 1, locks= yes, allownone };
+    key <AD02> { repeat= Yes, virtualMods= NumLock, symbols[Group1]= [ w ], actions[Group1]= [ NoAction() ], permanentradiogroup = 2, overlay2 = <AD01> };
+
+=== unknown key body field
+--- sym
+key <AD01> { bogus = 3, [ a ] };
+=== unknown statement in symbols
+--- sym
+bogus = 3; key <AD01> { [ a ] };
+=== unknown statement in keycodes
+--- sym
+key <AD01> { [ a ] };
+--- kc+
+bogus = 3;
+=== unknown field in a type
+--- sym
+key <AD01> { [ a ] };
+--- types+
+type "A" { bogus = 3; };
+=== symbols not a list
+--- sym
+key <AD01> { symbols[Group1] = a };
+=== type not a string
+--- sym
+key <AD01> { type = ALPHABETIC, [ a, A ] };
+=== key in symbols that keycodes lacks
+--- sym
+key <NOPE> { [ a ] }; key <AD01> { [ b ] };
+=== empty keymap sections
+--- raw
+xkb_keymap { xkb_keycodes { }; xkb_types { }; xkb_compat { }; xkb_symbols { }; };
+=== empty keymap
+--- raw
+xkb_keymap { };
+=== group names only
+--- sym
+name[Group1] = "A"; name[Group2] = "B"; key <AD01> { [ a ] };
+=== float levels
+--- sym
+key <AD01> { type = "A", [ a, b, c ] };
+--- types+
+type "A" { modifiers = Shift; map[Shift] = 2.9; };
+=== hex level
+--- sym
+key <AD01> { type = "A", [ a, b, c ] };
+--- types+
+type "A" { modifiers = Shift; map[Shift] = 0x3; };
+=== keycode expression
+--- sym
+key <Q1> { [ a ] };
+--- kc+
+<Q1> = 100+1;
+=== keycode hex
+--- sym
+key <Q1> { [ a ] };
+--- kc+
+<Q1> = 0xC8;
+=== led index hex and expression
+--- sym
+key <AD01> { [ a ] };
+--- kc+
+indicator 0x10 = "Sixteen";
+=== negative keycode
+--- sym
+key <Q1> { [ a ] };
+--- kc+
+<Q1> = -5;
+=== NUL inside (as space here)
+--- sym
+key <AD01> { [ a ] };
+=== oor 0: groupsClamp, [ a ], [ b ]
+--- sym
+key <AD01> { groupsClamp, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 1: groupsRedirect = Group2, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsRedirect = Group2, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 2: groupsRedirect = 3, [ a ], [ b ]
+--- sym
+key <AD01> { groupsRedirect = 3, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 3: clampGroups = yes, [ a ], [ b ]
+--- sym
+key <AD01> { clampGroups = yes, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 4: !groupsClamp, [ a ], [ b ]
+--- sym
+key <AD01> { !groupsClamp, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 5: groupsClamp = no, groupsWrap, [ a ], [ b ]
+--- sym
+key <AD01> { groupsClamp = no, groupsWrap, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 6: groupsRedirect = 1, groupsClamp = false, [ a ], [ b ]
+--- sym
+key <AD01> { groupsRedirect = 1, groupsClamp = false, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 7: groupsClamp, groupsWrap = false, [ a ], [ b ]
+--- sym
+key <AD01> { groupsClamp, groupsWrap = false, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 8: redirectGroups = 2, [ a ]
+--- sym
+key <AD01> { redirectGroups = 2, [ a ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 9: groupsClamp, groupsRedirect = Group2, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsClamp, groupsRedirect = Group2, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 10: groupsRedirect = Group2, groupsClamp, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsRedirect = Group2, groupsClamp, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 11: groupsRedirect = Group2, groupsWrap, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsRedirect = Group2, groupsWrap, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 12: groupsRedirect = Group2, !groupsRedirect, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsRedirect = Group2, !groupsRedirect, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 13: groupsClamp = 1, [ a ], [ b ]
+--- sym
+key <AD01> { groupsClamp = 1, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 14: groupsWrap = no, [ a ], [ b ]
+--- sym
+key <AD01> { groupsWrap = no, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 15: groupsClamp, groupsWrap = no, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsClamp, groupsWrap = no, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 16: groupsClamp, !groupsWrap, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsClamp, !groupsWrap, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 17: wrapGroups, [ a ], [ b ]
+--- sym
+key <AD01> { wrapGroups, [ a ], [ b ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 18: groupsRedirect = Group4, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsRedirect = Group4, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== oor 19: groupsRedirect = 5, [ a ], [ b ], [ c ]
+--- sym
+key <AD01> { groupsRedirect = 5, [ a ], [ b ], [ c ] }; key <AD02> { [ x ], [ y ], [ z ], [ w ] };
+=== led 0: whichModState = None; modifiers = Lock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = None; modifiers = Lock; };
+=== led 1: whichModState = Locked+Latched; modifiers = Shift+NumLock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = Locked+Latched; modifiers = Shift+NumLock; };
+=== led 2: groups = All-Group1;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = All-Group1; };
+=== led 3: whichGroupState = Base; groups = Group2;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Base; groups = Group2; };
+=== led 4: modifiers = Shift; groups = 2; whichGroupState = none;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { modifiers = Shift; groups = 2; whichGroupState = none; };
+=== led 5: whichModState = Any; modifiers = Control;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = Any; modifiers = Control; };
+=== led 6: whichModState = Compat; modifiers = Control; controls = MouseKeys;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = Compat; modifiers = Control; controls = MouseKeys; };
+=== led 7: whichModState = Base; mods = Mod1;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = Base; mods = Mod1; };
+=== led 8: whichModState = 0; modifiers = Lock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = 0; modifiers = Lock; };
+=== led 9: whichGroupState = Effective; groups = !Group1;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Effective; groups = !Group1; };
+=== led 10: groups = 0xfe;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = 0xfe; };
+=== led 11: groups = Group2;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = Group2; };
+=== led 12: groups = Group2+Group3;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = Group2+Group3; };
+=== led 13: groups = 3;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = 3; };
+=== led 14: groups = all;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = all; };
+=== led 15: groups = none;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = none; };
+=== led 16: whichGroupState = Locked; groups = 0x2;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Locked; groups = 0x2; };
+=== led 17: whichGroupState = Latched; groups = 0x1;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Latched; groups = 0x1; };
+=== led 18: whichGroupState = Any; groups = 0x4;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Any; groups = 0x4; };
+=== led 19: whichModState = Effective+Base; modifiers = Lock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = Effective+Base; modifiers = Lock; };
+=== led 20: whichModState = Depressed; modifiers = Lock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = Depressed; modifiers = Lock; };
+=== led 21: modifiers = Lock; whichModState = Latched; whichGroupState = Locked;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { modifiers = Lock; whichModState = Latched; whichGroupState = Locked; };
+=== led 22: modifiers = NumLock; groups = 0x2;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { modifiers = NumLock; groups = 0x2; };
+=== led 23: modifiers = all;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { modifiers = all; };
+=== led 24: modifiers = 0x5;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { modifiers = 0x5; };
+=== led 25: modifiers = none; whichModState = Locked;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { modifiers = none; whichModState = Locked; };
+=== led 26: !allowExplicit; indicatorDrivesKeyboard; index = 7; modifiers = Shift;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { !allowExplicit; indicatorDrivesKeyboard; index = 7; modifiers = Shift; };
+=== led 27: whichGroupState = Base; groups = 0x1;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Base; groups = 0x1; };
+=== led 28: whichGroupState = Locked+Base; groups = 0x3;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichGroupState = Locked+Base; groups = 0x3; };
+=== led 29: groups = 0xffffffff;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = 0xffffffff; };
+=== led 30: groups = 0x100;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = 0x100; };
+=== led 31: groups = Group5;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { groups = Group5; };
+=== led 32: whichModState = 8; modifiers = Lock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = 8; modifiers = Lock; };
+=== led 33: whichModState = 0xff; modifiers = Lock;
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator "Foo" { whichModState = 0xff; modifiers = Lock; };
+=== led default statements
+--- sym
+key <AD01> { [ q, Q ], [ w ], [ e ] };
+--- kc+
+indicator 5 = "Foo";
+--- compat+
+indicator.modifiers = Shift; indicator.whichModState = Locked; indicator "Foo" { groups = 0; };
+=== led not in keycodes
+--- sym
+key <AD01> { [ q, Q ] };
+--- compat+
+indicator "New One" { modifiers = Mod5; }; indicator "Second" { modifiers = Shift; };
+=== led in keycodes without a map
+--- sym
+key <AD01> { [ q, Q ] };
+--- kc+
+indicator 5 = "Foo";indicator 32 = "Last";
+=== led 33
+--- sym
+key <AD01> { [ q, Q ] };
+--- kc+
+indicator 5 = "Foo";indicator 33 = "Past";
+=== led 0
+--- sym
+key <AD01> { [ q, Q ] };
+--- kc+
+indicator 5 = "Foo";indicator 0 = "Zero";
+=== led same name at two indices
+--- sym
+key <AD01> { [ q, Q ] };
+--- kc+
+indicator 5 = "Foo";indicator 9 = "Caps Lock";
+=== led two names at one index
+--- sym
+key <AD01> { [ q, Q ] };
+--- kc+
+indicator 5 = "Foo";indicator 2 = "Other";
+=== set 0: [ { NoSymbol } ]
+--- sym
+key <AD01> { [ { NoSymbol } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 1: [ { a, NoSymbol } ]
+--- sym
+key <AD01> { [ { a, NoSymbol } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 2: [ { } ]
+--- sym
+key <AD01> { [ { } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 3: [ { a } ]
+--- sym
+key <AD01> { [ { a } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 4: [ { a, b }, { c } ]
+--- sym
+key <AD01> { [ { a, b }, { c } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 5: [ { NoSymbol, a } ]
+--- sym
+key <AD01> { [ { NoSymbol, a } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 6: [ { VoidSymbol, a } ]
+--- sym
+key <AD01> { [ { VoidSymbol, a } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 7: [ { a, b, c, d, e, f, g, h, i, j } ]
+--- sym
+key <AD01> { [ { a, b, c, d, e, f, g, h, i, j } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 8: [ a, { b, c } ], [ { d, e }, f ]
+--- sym
+key <AD01> { [ a, { b, c } ], [ { d, e }, f ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 9: [ { a, a } ]
+--- sym
+key <AD01> { [ { a, a } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 10: [ { NoSuchSym, a } ]
+--- sym
+key <AD01> { [ { NoSuchSym, a } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 11: [ { 1, 2 } ]
+--- sym
+key <AD01> { [ { 1, 2 } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 12: type = "TWO_LEVEL", [ { a, b }, { A, B } ]
+--- sym
+key <AD01> { type = "TWO_LEVEL", [ { a, b }, { A, B } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 13: type = "TWO_LEVEL", [ { dead_acute, a }, { Shift_L, a } ]
+--- sym
+key <AD01> { type = "TWO_LEVEL", [ { dead_acute, a }, { Shift_L, a } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 14: type = "CTRL", [ { c, d }, { e } ]
+--- sym
+key <AD01> { type = "CTRL", [ { c, d }, { e } ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 15: [ {a, b}, {A, B} ]
+--- sym
+key <AD01> { [ {a, b}, {A, B} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 16: [ {b, a}, {A, B} ]
+--- sym
+key <AD01> { [ {b, a}, {A, B} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 17: [ {a, b}, {A} ]
+--- sym
+key <AD01> { [ {a, b}, {A} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 18: [ {Return, a} ]
+--- sym
+key <AD01> { [ {Return, a} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 19: [ {U1F600, eacute, a} ]
+--- sym
+key <AD01> { [ {U1F600, eacute, a} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 20: [ {UD800} ]
+--- sym
+key <AD01> { [ {UD800} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 21: [ {a, UD800} ]
+--- sym
+key <AD01> { [ {a, UD800} ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 22: [ UD800 ]
+--- sym
+key <AD01> { [ UD800 ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 23: [ 0x100d800 ]
+--- sym
+key <AD01> { [ 0x100d800 ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 24: [ UFFFF, UFFFE, UFDD0 ]
+--- sym
+key <AD01> { [ UFFFF, UFFFE, UFDD0 ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 25: [ U10FFFF, 0x110ffff ]
+--- sym
+key <AD01> { [ U10FFFF, 0x110ffff ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 26: [ 0x1000041, 0x1000061 ]
+--- sym
+key <AD01> { [ 0x1000041, 0x1000061 ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 27: [ 0x1000061, 0x1000041 ]
+--- sym
+key <AD01> { [ 0x1000061, 0x1000041 ] }; key <CAPS> { [ Caps_Lock ] };
+=== set 28: [ 0x10000e9, 0x10000c9 ]
+--- sym
+key <AD01> { [ 0x10000e9, 0x10000c9 ] }; key <CAPS> { [ Caps_Lock ] };
+=== act 0: [ Num_Lock ], actions[Group1] = [ NoAction() ]
+--- sym
+key <AD01> { [ Num_Lock ], actions[Group1] = [ NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 1: [ a ], [ SetMods(modifiers=Shift) ]
+--- sym
+key <AD01> { [ a ], [ SetMods(modifiers=Shift) ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 2: [ ISO_Level3_Shift ], vmods = Alt
+--- sym
+key <AD01> { [ ISO_Level3_Shift ], vmods = Alt }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 3: virtualMods = NumLock, [ b ]
+--- sym
+key <AD01> { virtualMods = NumLock, [ b ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 4: [ c ], actions[Group2] = [ NoAction() ], repeat = yes
+--- sym
+key <AD01> { [ c ], actions[Group2] = [ NoAction() ], repeat = yes }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 5: [ d ], [ { SetMods(modifiers=Shift), NoAction() } ]
+--- sym
+key <AD01> { [ d ], [ { SetMods(modifiers=Shift), NoAction() } ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 6: [ Num_Lock ], [ NoAction() ]
+--- sym
+key <AD01> { [ Num_Lock ], [ NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 7: [ Num_Lock ], actions = [ NoAction() ]
+--- sym
+key <AD01> { [ Num_Lock ], actions = [ NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 8: actions[Group1] = [ SetMods(modifiers=Shift) ]
+--- sym
+key <AD01> { actions[Group1] = [ SetMods(modifiers=Shift) ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 9: actions[Group1] = [ SetMods(modifiers=Shift), NoAction(), NoAction() ]
+--- sym
+key <AD01> { actions[Group1] = [ SetMods(modifiers=Shift), NoAction(), NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 10: [ Num_Lock, a ], actions[Group1] = [ NoAction(), NoAction(), NoAction(), NoAction() ]
+--- sym
+key <AD01> { [ Num_Lock, a ], actions[Group1] = [ NoAction(), NoAction(), NoAction(), NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 11: type = "TWO_LEVEL", actions[Group1] = [ NoAction() ]
+--- sym
+key <AD01> { type = "TWO_LEVEL", actions[Group1] = [ NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 12: symbols[Group1] = [ a, A ], actions[Group3] = [ NoAction() ]
+--- sym
+key <AD01> { symbols[Group1] = [ a, A ], actions[Group3] = [ NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 13: actions[Group2] = [ SetMods(modifiers=Shift) ], symbols[Group3] = [ a ]
+--- sym
+key <AD01> { actions[Group2] = [ SetMods(modifiers=Shift) ], symbols[Group3] = [ a ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 14: [ Num_Lock ], vmods = none
+--- sym
+key <AD01> { [ Num_Lock ], vmods = none }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 15: [ Num_Lock ], vmods = Alt+LevelThree
+--- sym
+key <AD01> { [ Num_Lock ], vmods = Alt+LevelThree }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 16: [ Num_Lock ], vmods = Shift
+--- sym
+key <AD01> { [ Num_Lock ], vmods = Shift }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 17: [ Num_Lock ], vmods = 0x100
+--- sym
+key <AD01> { [ Num_Lock ], vmods = 0x100 }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 18: [ Num_Lock ], virtualModifiers = Alt
+--- sym
+key <AD01> { [ Num_Lock ], virtualModifiers = Alt }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 19: [ a ], actions[Group1] = [ SetMods(modifiers=NumLock) ]
+--- sym
+key <AD01> { [ a ], actions[Group1] = [ SetMods(modifiers=NumLock) ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 20: [ a ], [ b ], [ NoAction() ], [ NoAction() ]
+--- sym
+key <AD01> { [ a ], [ b ], [ NoAction() ], [ NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 21: [ NoAction() ], [ a ]
+--- sym
+key <AD01> { [ NoAction() ], [ a ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 22: [ a, NoAction() ]
+--- sym
+key <AD01> { [ a, NoAction() ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== act 23: [ a ], [ Shift_L, SetMods ]
+--- sym
+key <AD01> { [ a ], [ Shift_L, SetMods ] }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+=== str 0: "T\101" used as "TA"
+--- sym
+key <AD01> { type = "TA", [ a, b ] }; name[Group1] = "T\101";
+--- types+
+type "T\101" { modifiers = Control; map[Control] = Level2; };
+=== str 1: "T\tx" used as "T<TAB>x"
+--- sym
+key <AD01> { type = "T	x", [ a, b ] }; name[Group1] = "T\tx";
+--- types+
+type "T\tx" { modifiers = Control; map[Control] = Level2; };
+=== str 2: "T\"q" used as "T\"q"
+--- sym
+key <AD01> { type = "T\"q", [ a, b ] }; name[Group1] = "T\"q";
+--- types+
+type "T\"q" { modifiers = Control; map[Control] = Level2; };
+=== str 3: "T\\" used as "T\\"
+--- sym
+key <AD01> { type = "T\\", [ a, b ] }; name[Group1] = "T\\";
+--- types+
+type "T\\" { modifiers = Control; map[Control] = Level2; };
+=== str 4: "T\q" used as "Tq"
+--- sym
+key <AD01> { type = "Tq", [ a, b ] }; name[Group1] = "T\q";
+--- types+
+type "T\q" { modifiers = Control; map[Control] = Level2; };
+=== str 5: "T\e" used as "T<ESC>"
+--- sym
+key <AD01> { type = "T", [ a, b ] }; name[Group1] = "T\e";
+--- types+
+type "T\e" { modifiers = Control; map[Control] = Level2; };
+=== str 6: "T\0z" used as "Tz"
+--- sym
+key <AD01> { type = "Tz", [ a, b ] }; name[Group1] = "T\0z";
+--- types+
+type "T\0z" { modifiers = Control; map[Control] = Level2; };
+=== str 7: "T\777z" used as "Tz"
+--- sym
+key <AD01> { type = "Tz", [ a, b ] }; name[Group1] = "T\777z";
+--- types+
+type "T\777z" { modifiers = Control; map[Control] = Level2; };
+=== str 8: "T\400z" used as "Tz"
+--- sym
+key <AD01> { type = "Tz", [ a, b ] }; name[Group1] = "T\400z";
+--- types+
+type "T\400z" { modifiers = Control; map[Control] = Level2; };
+=== str 9: "T\1011" used as "TA1"
+--- sym
+key <AD01> { type = "TA1", [ a, b ] }; name[Group1] = "T\1011";
+--- types+
+type "T\1011" { modifiers = Control; map[Control] = Level2; };
+=== str 10: "T\8" used as "T8"
+--- sym
+key <AD01> { type = "T8", [ a, b ] }; name[Group1] = "T\8";
+--- types+
+type "T\8" { modifiers = Control; map[Control] = Level2; };
+=== str 11: "T\n" used as "T\n"
+--- sym
+key <AD01> { type = "T\n", [ a, b ] }; name[Group1] = "T\n";
+--- types+
+type "T\n" { modifiers = Control; map[Control] = Level2; };
+=== str 12: "T\x41" used as "TA"
+--- sym
+key <AD01> { type = "TA", [ a, b ] }; name[Group1] = "T\x41";
+--- types+
+type "T\x41" { modifiers = Control; map[Control] = Level2; };
+=== str 13: "T\x41" used as "Tx41"
+--- sym
+key <AD01> { type = "Tx41", [ a, b ] }; name[Group1] = "T\x41";
+--- types+
+type "T\x41" { modifiers = Control; map[Control] = Level2; };
+=== str 14: "Té" used as "Té"
+--- sym
+key <AD01> { type = "Té", [ a, b ] }; name[Group1] = "Té";
+--- types+
+type "Té" { modifiers = Control; map[Control] = Level2; };
+=== str 15: "T\351" used as "Té"
+--- sym
+key <AD01> { type = "Té", [ a, b ] }; name[Group1] = "T\351";
+--- types+
+type "T\351" { modifiers = Control; map[Control] = Level2; };
+=== str 16: "T\303\251" used as "Té"
+--- sym
+key <AD01> { type = "Té", [ a, b ] }; name[Group1] = "T\303\251";
+--- types+
+type "T\303\251" { modifiers = Control; map[Control] = Level2; };
+=== str 17: "T\b\f\v\r" used as "T\b\f\v\r"
+--- sym
+key <AD01> { type = "T\b\f\v\r", [ a, b ] }; name[Group1] = "T\b\f\v\r";
+--- types+
+type "T\b\f\v\r" { modifiers = Control; map[Control] = Level2; };
+=== str 18: "" used as ""
+--- sym
+key <AD01> { type = "", [ a, b ] }; name[Group1] = "";
+--- types+
+type "" { modifiers = Control; map[Control] = Level2; };
+=== mm 0: modMap Mod3 { <AD01> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modMap Mod3 { <AD01> };
+=== mm 1: mod_map Mod4 { Super_R, <LatQ> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; mod_map Mod4 { Super_R, <LatQ> };
+=== mm 2: modifier_map None { <AD03> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map None { <AD03> };
+=== mm 3: modifier_map mod3 { y };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map mod3 { y };
+=== mm 4: modifier_map Mod3 { NoSuchSym };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { NoSuchSym };
+=== mm 5: modifier_map Mod3 { <NOPE> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { <NOPE> };
+=== mm 6: modifier_map Mod3 { y, Hyper_R };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { y, Hyper_R };
+=== mm 7: modifier_map Mod3 { Hyper_R };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { Hyper_R };
+=== mm 8: modifier_map Mod3 { };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { };
+=== mm 9: modifier_map Mod3 { 0x79 };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { 0x79 };
+=== mm 10: modifier_map Mod3 { 5 };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { 5 };
+=== mm 11: modifier_map Mod3 { "y" };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { "y" };
+=== mm 12: modifier_map Mod3 { NoSymbol };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { NoSymbol };
+=== mm 13: modifier_map Mod3 { VoidSymbol };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { VoidSymbol };
+=== mm 14: modifier_map Mod3 { a };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { a };
+=== mm 15: modifier_map Mod3 { A };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { A };
+=== mm 16: modifier_map Mod3 { z };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { z };
+=== mm 17: modifier_map Mod3 { <AD01> }; modifier_map Mod4 { <AD01> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { <AD01> }; modifier_map Mod4 { <AD01> };
+=== mm 18: modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { <AD01> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { <AD01> };
+=== mm 19: modifier_map Mod4 { <AD01> }; modifier_map Mod3 { Hyper_L };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod4 { <AD01> }; modifier_map Mod3 { Hyper_L };
+=== mm 20: modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { Hyper_L };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { Hyper_L };
+=== mm 21: modifier_map Mod3 { Hyper_L, Hyper_R };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { Hyper_L, Hyper_R };
+=== mm 22: modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { g1 };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { g1 };
+=== mm 23: modifier_map Mod3 { g1 }; modifier_map Mod4 { Hyper_L };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { g1 }; modifier_map Mod4 { Hyper_L };
+=== mm 24: modifier_map Mod3 { m };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { m };
+=== mm 25: modifier_map Mod3 { n };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { n };
+=== mm 26: modifier_map Mod3 { <AD01> }; modifier_map None { <AD01> };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { <AD01> }; modifier_map None { <AD01> };
+=== mm 27: modifier_map Mod3 { <AD01> }; modifier_map none { Hyper_L };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { <AD01> }; modifier_map none { Hyper_L };
+=== mm 28: modifier_map Mod3 { o };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { o };
+=== mm 29: modifier_map Mod3 { p };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { p };
+=== mm 30: modifier_map Mod3 { q };
+--- sym
+key <AD01> { [ Hyper_L, g1 ] }; key <AD02> { [ Super_R ] }; key <AD03> { [ x ] }; key <AD04> { [ y ] }; key <AD05> { [ a, Hyper_R ] }; key <AD06> { [ b, a ] }; key <AD07> { [ c ], [ A ] }; key <AD08> { [ { z, z } ] }; key <AE01> { [ k ], [ m ] }; key <AE02> { [ l, m ] }; key <AE03> { [ n ] }; key <AE04> { [ n ] }; key <AE05> { [ r, s, o ] }; key <AE06> { [ t ], [ o ] }; key <AE07> { type = "TWO_LEVEL", [ u, v, p ] }; key <AE08> { [ q ] }; key <LatQ> { [ q ] }; modifier_map Mod3 { q };
+=== 5 levels explicit type default first
+--- sym
+key <AD01> { [ a, A, b, B, c ] };
+=== level name does not add a level
+--- sym
+key <AD01> { type = "H", [ a, b, c, d, e ] };
+--- types+
+type "H" { modifiers = Shift; map[Shift] = Level2; level_name[Level5] = "five"; };
+=== preserve does not add a level
+--- sym
+key <AD01> { type = "H", [ a, b, c ] };
+--- types+
+type "H" { modifiers = Shift+Lock; preserve[Shift] = Shift; };
+=== type with no map
+--- sym
+key <AD01> { type = "H", [ a, b, c ] };
+--- types+
+type "H" { modifiers = Shift+Lock; };
+=== map before modifiers
+--- sym
+key <AD01> { type = "H", [ a, b, c ] };
+--- types+
+type "H" { map[Shift] = Level2; modifiers = Shift+Lock; map[Lock] = 3; };
+=== bang mask
+--- sym
+key <AD01> { type = "J", [ a, b, c ] };
+--- types+
+type "J" { modifiers = !Shift; map[Lock] = Level2; map[Control+Lock] = 3; };
+=== tilde mask
+--- sym
+key <AD01> { type = "J", [ a, b, c ] };
+--- types+
+type "J" { modifiers = ~Shift; map[Lock] = Level2; map[Control+Lock] = 3; };
+=== minus mask
+--- sym
+key <AD01> { type = "J", [ a, b, c ] };
+--- types+
+type "J" { modifiers = all-Shift; map[Lock] = Level2; map[Control+Lock] = 3; };
+=== numeric mask with virtual bits
+--- sym
+key <AD01> { type = "J", [ a, b, c ] };
+--- types+
+type "J" { modifiers = 0x1ff; map[0x100] = Level2; map[0x101] = 3; };
+=== numeric mask past the modifiers
+--- sym
+key <AD01> { type = "J", [ a, b, c ] };
+--- types+
+type "J" { modifiers = 0xffffffff; map[0x80000000] = Level2; };
+=== vmod mapped by number in interpret
+--- sym
+key <AD01> { type = "KEYPAD", [ a, b ] }; key <AD02> { [ Num_Lock ] }; modifier_map Mod2 { <AD02> };
+=== key twice: second adds a group
+--- sym
+key <AD02> { [ a, A ], [ b, B ] }; key <AD02> { symbols[Group2] = [ c ] };
+=== key twice: second only repeat
+--- sym
+key <AD03> { type = "TWO_LEVEL", [ a, A ] }; key <AD03> { repeat = no };
+=== key twice: second other syms
+--- sym
+key <AD01> { [ q, Q ] }; key <AD01> { [ w ] };
+=== key twice: same
+--- sym
+key <AD01> { [ q, Q ] }; key <AD01> { [ q, Q ] };
+=== key twice via alias
+--- sym
+key <AD01> { [ q, Q ] }; key <LatQ> { [ w, W ] };
+=== empty list key
+--- sym
+key <AD01> { [ ] }; key <AD02> { [ NoSymbol ] }; key <AD03> { [ NoSymbol, NoSymbol ] }; key <AD04> { }; key <AD05> { [ ], [ a ] }; key <AD06> { [ a ], [ ] };
+=== min max without keys
+--- raw
+xkb_keymap { xkb_keycodes { minimum = 20; maximum = 30; }; xkb_types { }; xkb_compat { }; xkb_symbols { }; };
+=== min max wider than keys
+--- raw
+xkb_keymap { xkb_keycodes { minimum = 8; maximum = 255; <A> = 40; <B> = 50; }; xkb_types { }; xkb_compat { }; xkb_symbols { key <A> { [ a ] }; }; };
+=== keycodes without min max
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 40; <B> = 50; }; xkb_types { }; xkb_compat { }; xkb_symbols { key <A> { [ a ] }; }; };
+=== interp repeat: bare
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret a { repeat; };
+=== group statement in compat
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+group 2 = AltGr; groupName[1] = "x";
+=== actions defaults in compat
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+setMods.clearLocks = True; latchMods.clearLocks = True; SetGroup.group = +1; MovePtr.accel = false; interpret.locking = False;
+=== xkbcomp action forms
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+
+    interpret ISO_Next_Group { useModMapMods= level1; virtualModifier= AltGr; action= LockGroup(group=+1); };
+    interpret Pointer_Left { action= MovePtr(x=-1,y=+0); };
+    interpret Pointer_Button1 { action= PtrBtn(button=1,count=2); };
+    interpret XF86_Switch_VT_1 { repeat= True; action= SwitchScreen(screen=1,!same); };
+    interpret Terminate_Server { action= Terminate(); };
+    interpret F25 { action= Private(type=0x86,data[0]=0x50,data[1]=0x72,data[2]=0x67,data[3]=0x72,data[4]=0x70,data[5]=0x00,data[6]=0x00); };
+    interpret F26 { action= Redirect(key=<AD01>, clearMods=Shift, modifiers=Lock); };
+    interpret F27 { action= Message(report=press+release, data[0]=1); };
+    interpret F28 { action= ISOLock(modifiers=modMapMods, affect=all); };
+    interpret F29 { action= LockControls(controls=MouseKeys+AccessXKeys); };
+
+=== AltGr vmod undeclared in interpret
+--- sym
+key <AD01> { [ a ] };
+--- compat+
+interpret ISO_Next_Group { virtualModifier= AltGr; };
+=== modmap: key name Mod3 then its keysym Mod4
+--- sym
+key <AD01> { [ Hyper_L ] }; modifier_map Mod3 { <AD01> }; modifier_map Mod4 { Hyper_L }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== modmap: keysym Mod4 then key name Mod3
+--- sym
+key <AD01> { [ Hyper_L ] }; modifier_map Mod4 { Hyper_L }; modifier_map Mod3 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== modmap: two keysyms of one key, Mod1 and Mod4
+--- sym
+key <AD01> { [ Alt_L, Meta_L ] }; modifier_map Mod1 { Alt_L }; modifier_map Mod4 { Meta_L }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== modmap: same keysym twice, Mod3 then Mod4
+--- sym
+key <AD01> { [ Hyper_L ] }; modifier_map Mod3 { Hyper_L }; modifier_map Mod4 { Hyper_L }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== modmap: same key name twice, Mod3 then Mod4
+--- sym
+key <AD01> { [ Hyper_L ] }; modifier_map Mod3 { <AD01> }; modifier_map Mod4 { <AD01> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== modmap: key name and its alias, Mod3 then Mod4
+--- sym
+key <AD01> { [ Hyper_L ] }; modifier_map Mod3 { <AD01> }; modifier_map Mod4 { <LatQ> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== modmap: one keysym on two keys
+--- sym
+key <AD01> { [ Hyper_L ] }; key <AD03> { [ Hyper_L ] }; modifier_map Mod3 { Hyper_L }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat
+
+    virtual_modifiers NumLock,Alt,LevelThree;
+    interpret Alt_L+AnyOf(all) { virtualModifier= Alt; };
+    interpret Meta_L+AnyOf(all) { virtualModifier= LevelThree; };
+    interpret Hyper_L+AnyOf(all) { virtualModifier= Alt; };
+
+--- mods
+
+    key <LFSH> { [ Shift_L ] }; key <LCTL> { [ Control_L ] }; key <CAPS> { [ Caps_Lock ] };
+    modifier_map Shift { Shift_L }; modifier_map Lock { Caps_Lock }; modifier_map Control { Control_L };
+
+=== compat: undeclared vmod alone
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret ISO_Next_Group { virtualModifier= AltGr; };
+=== compat: undeclared vmod after another field
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret ISO_Next_Group { useModMapMods= level1; virtualModifier= AltGr; action= LockGroup(group=+1); };
+=== compat: undeclared vmod with action after
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret ISO_Next_Group { virtualModifier= AltGr; action= LockGroup(group=+1); };
+=== compat: undeclared vmod and more interprets after
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret ISO_Next_Group { virtualModifier= AltGr; }; interpret Pointer_Left { action= MovePtr(x=-1,y=+0); };
+=== compat: MovePtr
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret Pointer_Left { action= MovePtr(x=-1,y=+0); };
+=== compat: PtrBtn
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret Pointer_Button1 { action= PtrBtn(button=1,count=2); };
+=== compat: SwitchScreen
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret XF86_Switch_VT_1 { repeat= True; action= SwitchScreen(screen=1,!same); };
+=== compat: Terminate
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret Terminate_Server { action= Terminate(); };
+=== compat: Private
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret F25 { action= Private(type=0x86,data[0]=0x50,data[1]=0x72,data[2]=0x67,data[3]=0x72,data[4]=0x70,data[5]=0x00,data[6]=0x00); };
+=== compat: Redirect
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret F26 { action= Redirect(key=<AD01>, clearMods=Shift, modifiers=Lock); };
+=== compat: Message
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret F27 { action= Message(report=press+release, data[0]=1); };
+=== compat: ISOLock
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret F28 { action= ISOLock(modifiers=modMapMods, affect=all); };
+=== compat: LockControls
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret F29 { action= LockControls(controls=MouseKeys+AccessXKeys); };
+=== compat: action string data
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret F25 { action= Private(type=3,data="abc"); };
+=== compat: repeat with unknown vmod in default
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret.virtualModifier = Bogus;
+=== compat: interpret default vmod
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret.virtualModifier = Alt; interpret a { repeat = True; };
+=== compat: interpret default useModMapMods
+--- sym
+key <AD01> { [ a ] }; key <AD03> { [ f, g ] }; modifier_map Mod3 { <AD01>, <AD03> }; key <AD02> { type = "G", [ a, b, c, d ] };
+--- types+
+type "G" { modifiers = Shift+Alt+NumLock+LevelThree; map[Alt] = Level2; map[LevelThree] = Level3; map[NumLock] = Level4; };
+--- compat+
+interpret.useModMapMods = level1; interpret g { virtualModifier = Alt; };
+=== xkbcomp style
+--- raw
+
+xkb_keymap {
+xkb_keycodes "evdev+aliases(qwerty)" {
+    minimum = 8;
+    maximum = 255;
+     <ESC> = 9;
+    <AE01> = 10;
+    <AD01> = 24;
+    <LFSH> = 50;
+    <LALT> = 64;
+    <CAPS> = 66;
+    <NMLK> = 77;
+     <KP7> = 79;
+    <RALT> = 108;
+    <LVL3> = 92;
+    indicator 1 = "Caps Lock";
+    indicator 2 = "Num Lock";
+    virtual indicator 12 = "Shift Lock";
+    alias <AC12> = <AD01>;
+};
+
+xkb_types "complete" {
+
+    virtual_modifiers NumLock,Alt,LevelThree,LAlt,RAlt,RControl,LControl,ScrollLock,LevelFive,AltGr,Meta,Super,Hyper;
+
+    type "ONE_LEVEL" {
+        modifiers= none;
+        level_name[Level1]= "Any";
+    };
+    type "TWO_LEVEL" {
+        modifiers= Shift;
+        map[Shift]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Shift";
+    };
+    type "ALPHABETIC" {
+        modifiers= Shift+Lock;
+        map[Shift]= Level2;
+        map[Lock]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Caps";
+    };
+    type "KEYPAD" {
+        modifiers= Shift+NumLock;
+        map[Shift]= Level2;
+        map[NumLock]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Number";
+    };
+    type "FOUR_LEVEL" {
+        modifiers= Shift+LevelThree;
+        map[Shift]= Level2;
+        map[LevelThree]= Level3;
+        map[Shift+LevelThree]= Level4;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Shift";
+        level_name[Level3]= "Alt Base";
+        level_name[Level4]= "Shift Alt";
+    };
+};
+
+xkb_compatibility "complete" {
+
+    virtual_modifiers NumLock,Alt,LevelThree,LAlt,RAlt,RControl,LControl,ScrollLock,LevelFive,AltGr,Meta,Super,Hyper;
+
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret.locking= False;
+    interpret ISO_Level2_Latch+Exactly(Shift) {
+        useModMapMods=level1;
+        action= LatchMods(modifiers=Shift,clearLocks,latchToLock);
+    };
+    interpret Shift_Lock+AnyOf(Shift+Lock) {
+        action= LockMods(modifiers=Shift);
+    };
+    interpret Num_Lock+AnyOf(all) {
+        virtualModifier= NumLock;
+        action= LockMods(modifiers=NumLock);
+    };
+    interpret ISO_Level3_Shift+AnyOf(all) {
+        virtualModifier= LevelThree;
+        useModMapMods=level1;
+        action= SetMods(modifiers=LevelThree,clearLocks);
+    };
+    interpret Alt_L+AnyOf(all) {
+        virtualModifier= Alt;
+        action= SetMods(modifiers=modMapMods,clearLocks);
+    };
+    interpret Mode_switch+AnyOfOrNone(all) {
+        virtualModifier= AltGr;
+        useModMapMods=level1;
+        action= SetGroup(group=+1);
+    };
+    interpret ISO_Level3_Shift+AnyOfOrNone(all) {
+        action= SetMods(modifiers=LevelThree,clearLocks);
+    };
+    interpret Caps_Lock+AnyOfOrNone(all) {
+        action= LockMods(modifiers=Lock);
+    };
+    interpret Any+Exactly(Lock) {
+        action= LockMods(modifiers=Lock);
+    };
+    interpret Any+AnyOf(all) {
+        action= SetMods(modifiers=modMapMods,clearLocks);
+    };
+    group 2 = AltGr;
+    group 3 = AltGr;
+    group 4 = AltGr;
+    indicator "Caps Lock" {
+        !allowExplicit;
+        whichModState= locked;
+        modifiers= Lock;
+    };
+    indicator "Num Lock" {
+        !allowExplicit;
+        whichModState= locked;
+        modifiers= NumLock;
+    };
+    indicator "Shift Lock" {
+        !allowExplicit;
+        whichModState= locked;
+        modifiers= Shift;
+    };
+};
+
+xkb_symbols "pc+us+inet(evdev)" {
+
+    name[group1]="English (US)";
+
+    key  <ESC> {         [          Escape ] };
+    key <AE01> {         [               1,          exclam ] };
+    key <AD01> {
+        type= "ALPHABETIC",
+        symbols[Group1]= [               q,               Q ]
+    };
+    key <LFSH> {         [         Shift_L ] };
+    key <LALT> {         [           Alt_L,          Meta_L ] };
+    key <CAPS> {         [       Caps_Lock ] };
+    key <NMLK> {         [        Num_Lock ] };
+    key  <KP7> {         [         KP_Home,            KP_7 ] };
+    key <RALT> {
+        type= "TWO_LEVEL",
+        symbols[Group1]= [           Alt_R,          Meta_R ]
+    };
+    key <LVL3> {
+        type= "ONE_LEVEL",
+        symbols[Group1]= [ ISO_Level3_Shift ]
+    };
+    modifier_map Shift { <LFSH> };
+    modifier_map Lock { <CAPS> };
+    modifier_map Mod1 { <LALT> };
+    modifier_map Mod1 { <RALT> };
+    modifier_map Mod2 { <NMLK> };
+    modifier_map Mod5 { <LVL3> };
+};
+
+};
+
+=== leading-zero keycode
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 010; <B> = 0020; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 02; }; }; xkb_compat { }; xkb_symbols { key <A> { [ a, b ] }; key <B> { [ 010, 0x0A, 007 ] }; }; };
+=== float keycode
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10.7; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { [ a, b ] }; }; };
+=== number glued to a name
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { [ 3270_Enter, b ] }; }; };
+=== tabs and line breaks
+--- raw
+xkb_keymap {
+	xkb_keycodes { <A> = 10; };
+	xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; };
+	xkb_compat { };
+	xkb_symbols { key <A> { [ a, b ] }; };
+};
+=== string with a newline inside
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { name[Group1] = "two
+lines"; key <A> { [ a, b ] }; }; };
+=== key name of five and more characters and odd characters
+--- raw
+xkb_keymap { xkb_keycodes { <ABCDE> = 10; <I129> = 11; <a.b-c_d> = 12; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <ABCDE> { [ a, b ] }; key <a.b-c_d> { [ c ] }; }; };
+=== hex and upper-case X
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 0X0a; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { [ 0X61, b ] }; }; };
+=== symbols without brackets around a single keysym
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { symbols[Group1] = [ a ] }; }; };
+=== modifier_map with a trailing comma
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { [ a, b ] }; modifier_map Shift { <A>, }; }; };
+=== key list with a trailing comma
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { [ a, b, ] }; }; };
+=== key body with a trailing comma
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { [ a, b ], }; }; };
+=== key body separated by semicolons
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift; map[Shift] = 2; }; }; xkb_compat { }; xkb_symbols { key <A> { type = "T"; [ a, b ]; }; }; };
+=== type body separated by commas
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10; }; xkb_types { type "T" { modifiers = Shift, map[Shift] = 2 }; }; xkb_compat { }; xkb_symbols { key <A> { [ a, b ] }; }; };
+=== statement without a semicolon at the end of a section
+--- raw
+xkb_keymap { xkb_keycodes { <A> = 10 }; xkb_types { }; xkb_compat { }; xkb_symbols { key <A> { [ a, b ] } }; };
+

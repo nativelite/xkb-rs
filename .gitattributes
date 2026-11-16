@@ -3,3 +3,4 @@ tests/fixtures/* text eol=lf
 *.py text eol=lf
 *.md text eol=lf
 *.toml text eol=lf
+tests/handwritten/*.txt text eol=lf

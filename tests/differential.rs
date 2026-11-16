@@ -230,6 +230,12 @@ fn compare(r: &Ref, ctx: P, label: &str, source: &str, states: &[[u32; 6]], t: &
         Ok(k) => k,
         Err(e) => panic!("{label}: {e}"),
     };
+    compare_loaded(r, km, ours, label, states, t);
+}
+
+/// Compare everything about a keymap both libraries have read. `km` is
+/// released.
+fn compare_loaded(r: &Ref, km: P, ours: Keymap, label: &str, states: &[[u32; 6]], t: &mut Tally) {
     // SAFETY (for the whole function): `km` and the state made from it are
     // live until the end, and every call takes the arguments documented.
     unsafe {
@@ -296,18 +302,39 @@ fn compare(r: &Ref, ctx: P, label: &str, source: &str, states: &[[u32; 6]], t: &
             }
         }
 
-        // A key without a type of its own gets one from the case of its first
-        // keysyms. Where the two libraries case one of them differently
-        // (Unicode here, the X11 tables in the reference), the key may get
-        // another type; such keys are counted and not compared further.
+        // A key without a type of its own (the reference's writer leaves out
+        // the types it worked out itself) gets one from two questions: are
+        // its first two levels a lower-case and an upper-case keysym, and,
+        // of three or four levels, the next two as well? Where the two
+        // libraries answer either differently (Unicode case here, the X11
+        // tables in the reference), the key may get another type; such keys
+        // are counted and not compared further.
+        let pair = |kc: u32, g: u32, l: u32| {
+            let at = |l: u32| {
+                ours.key_syms_by_level(kc, g, l)
+                    .first()
+                    .copied()
+                    .unwrap_or(Keysym::NO_SYMBOL)
+            };
+            let (low, up) = (at(l), at(l + 1));
+            (
+                low.is_lower() && up.is_upper(),
+                reference_case(r, low).0 && reference_case(r, up).1,
+            )
+        };
         let type_may_differ: Vec<bool> = (min..=max)
             .map(|kc| {
                 (0..ours.num_layouts_for_key(kc)).any(|g| {
-                    (0..ours.num_levels_for_key(kc, g).min(4)).any(|l| {
-                        ours.key_syms_by_level(kc, g, l)
-                            .first()
-                            .is_some_and(|s| (s.is_lower(), s.is_upper()) != reference_case(r, *s))
-                    })
+                    let width = ours.num_levels_for_key(kc, g);
+                    if !(2..=4).contains(&width) {
+                        return false;
+                    }
+                    let (here, there) = pair(kc, g, 0);
+                    if here != there {
+                        return true;
+                    }
+                    let (here, there) = pair(kc, g, 2);
+                    width > 2 && here && here != there
                 })
             })
             .collect();
@@ -318,9 +345,13 @@ fn compare(r: &Ref, ctx: P, label: &str, source: &str, states: &[[u32; 6]], t: &
         for s in states {
             // The reference wraps a negative layout that is a multiple of the
             // layout count to the count itself, one past the last layout.
-            let locked = i64::from(s[5] as i32).rem_euclid(i64::from(layouts.max(1)));
+            let count = i64::from(layouts.max(1));
+            let locked = i64::from(s[5] as i32).rem_euclid(count);
             let sum = i64::from(s[3] as i32) + i64::from(s[4] as i32) + locked;
-            if sum < 0 && sum % i64::from(layouts.max(1)) == 0 {
+            // The same goes for the locked layout on its own, which an LED
+            // can show.
+            let locked_wrong = (s[5] as i32) < 0 && i64::from(s[5] as i32) % count == 0;
+            if (sum < 0 && sum % count == 0) || locked_wrong {
                 t.reference_bug += 1;
                 continue;
             }
@@ -373,6 +404,14 @@ fn compare(r: &Ref, ctx: P, label: &str, source: &str, states: &[[u32; 6]], t: &
                         || at("level"),
                     );
                 }
+                // A layout past the key's own has no level.
+                for past in [layouts, layouts + 1, 7, u32::MAX] {
+                    t.eq(
+                        state.key_level(kc, past).unwrap_or(u32::MAX),
+                        (r.xkb_state_key_get_level)(st, kc, past),
+                        || at("level of a layout out of range, level"),
+                    );
+                }
                 let mut p: *const u32 = std::ptr::null();
                 let n = (r.xkb_state_key_get_syms)(st, kc, &mut p);
                 let theirs: Vec<Keysym> =
@@ -383,12 +422,13 @@ fn compare(r: &Ref, ctx: P, label: &str, source: &str, states: &[[u32; 6]], t: &
                     (r.xkb_state_key_get_consumed_mods)(st, kc),
                     || at("consumed"),
                 );
-                // Caps Lock upper-cases the keysym: comparable only where
-                // both libraries have the same upper case for it.
-                if state
-                    .key_syms(kc)
-                    .iter()
-                    .any(|s| s.to_upper().0 != (r.xkb_keysym_to_upper)(s.0))
+                // Caps Lock upper-cases the keysym: with Lock on, comparable
+                // only where both libraries have the same upper case for it.
+                if state.mods(Component::Effective) & 2 != 0
+                    && state
+                        .key_syms(kc)
+                        .iter()
+                        .any(|s| s.to_upper().0 != (r.xkb_keysym_to_upper)(s.0))
                 {
                     t.case_policy += 3;
                     continue;
@@ -899,6 +939,10 @@ fn compare_compose(r: &Ref, label: &str, theirs: P, ours: &compose::Table, t: &m
             pool.sort();
             pool.dedup();
             pool.extend([0xffe1, 0xffe9, 0xff7f, 0xfe03, 0x61, 0xff0d, 0].map(Keysym));
+            // Every keysym around the ones that are modifier keys' (which a
+            // sequence passes over), so both edges of each range are met.
+            pool.extend((0xfe00..=0xfe20).chain(0xffdf..=0xfff0).map(Keysym));
+            pool.extend([0xff7d, 0xff7e, 0xff7f, 0xff80].map(Keysym));
             let mut seed = 0x2545_f491_4f6c_dd1du64;
             let mut rnd = |n: usize| {
                 seed ^= seed << 13;
@@ -1024,4 +1068,96 @@ fn compose_syntax_matches_the_reference() {
     assert!(!theirs.is_null());
     compare_compose(&r, "syntax", theirs, &compose::Table::parse(source), &mut t);
     t.finish("compose, a file of every construct");
+}
+
+#[path = "handwritten/cases.rs"]
+mod handwritten;
+
+/// States for the hand-written texts: every real-modifier mask, layouts in
+/// and out of range, the three components, and each virtual modifier.
+fn handwritten_states() -> Vec<[u32; 6]> {
+    let mut v = Vec::new();
+    for m in 0..256 {
+        v.push([m, 0, 0, 0, 0, 0]);
+    }
+    for m in [
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x81, 0xff,
+    ] {
+        v.push([0, m, 0, 0, 0, 0]);
+        v.push([0, 0, m, 0, 0, 0]);
+        for g in [1, 2, 3, 4, 5, u32::MAX] {
+            v.push([m, 0, 0, 0, 0, g]);
+        }
+        v.push([m, 0, 0, 1, 0, 0]);
+        v.push([m, 0, 0, 0, 1, 0]);
+        v.push([m, 0, 0, 2, 1, 1]);
+    }
+    for bit in 8..32 {
+        v.push([1 << bit, 0, 0, 0, 0, 0]);
+        v.push([0, 0, 1 << bit, 0, 0, 0]);
+    }
+    v
+}
+
+/// Text the reference's own writer never produces: both libraries read each
+/// case, must agree on whether it is a keymap, and where it is, on
+/// everything about it. A text the reference refuses and this library
+/// reads is counted, not a failure: this library is the more lenient
+/// reader (the README lists how).
+#[test]
+fn handwritten_keymaps_match_the_reference() {
+    let Some(r) = load() else { return };
+    // SAFETY: no preconditions.
+    let ctx = unsafe { (r.xkb_context_new)(0) };
+    assert!(!ctx.is_null());
+    let mut t = Tally::default();
+    let states = handwritten_states();
+    let (mut both, mut neither, mut needs_files, mut lenient) = (0, 0, 0, Vec::new());
+    let mut refused: Vec<String> = Vec::new();
+    for (label, source) in handwritten::all() {
+        let c = CString::new(source.replace('\0', " ")).unwrap();
+        // SAFETY: the context is live and the text NUL-terminated.
+        let km = unsafe { (r.xkb_keymap_new_from_string)(ctx, c.as_ptr(), 1, 0) };
+        let ours: Result<Keymap, _> = source.parse();
+        match (km.is_null(), ours) {
+            (false, Ok(ours)) => {
+                both += 1;
+                let mut case = Tally::default();
+                compare_loaded(&r, km, ours, &label, &states, &mut case);
+                t.compared += case.compared;
+                t.case_policy += case.case_policy;
+                t.reference_bug += case.reference_bug;
+                if case.wrong_count > 0 {
+                    t.wrong_count += case.wrong_count;
+                    *t.kinds.entry(label.clone()).or_insert(0) += case.wrong_count;
+                    t.wrong.extend(case.wrong.into_iter().take(4));
+                }
+            }
+            (false, Err(e)) => {
+                // The reference finds the files an `include` names on the
+                // system; this library reads complete keymaps only.
+                if e.to_string().contains("`include`") {
+                    needs_files += 1;
+                } else {
+                    refused.push(format!("{label}: {e}"));
+                }
+                // SAFETY: a live keymap.
+                unsafe { (r.xkb_keymap_unref)(km) };
+            }
+            (true, Ok(_)) => lenient.push(label),
+            (true, Err(_)) => neither += 1,
+        }
+    }
+    println!(
+        "hand-written texts: {both} read by both, {neither} by neither, {needs_files} that \
+         include a file, {} only here: {lenient:?}",
+        lenient.len()
+    );
+    for refusal in refused {
+        t.wrong_count += 1;
+        t.wrong.push(format!(
+            "the reference reads this, this library does not: {refusal}"
+        ));
+    }
+    t.finish("hand-written keymap texts");
 }

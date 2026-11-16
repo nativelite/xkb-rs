@@ -84,17 +84,28 @@ own clients.
 
 | What | Comparisons | Mismatches |
 | --- | --- | --- |
-| 14 layouts (us, de, fr, ru, gb, us+ru, de neo, us intl, four layouts at once, jp, option sets, gr+il+ara, ca multix, dvorak), every key, 753 modifier/layout states: keymap contents, layout, level, keysyms, one keysym, UTF-8, UTF-32, consumed modifiers, repeat, modifier masks, LEDs | 48,295,514 | 0 |
-| All 589 layouts and variants of xkeyboard-config 2.41, each with `us` as a second layout, 38 states | 107,091,059 | 0 |
+| 14 layouts (us, de, fr, ru, gb, us+ru, de neo, us intl, four layouts at once, jp, option sets, gr+il+ara, ca multix, dvorak), every key, 753 modifier/layout states: keymap contents, layout, level (also of layouts the key does not have), keysyms, one keysym, UTF-8, UTF-32, consumed modifiers, repeat, modifier masks, LEDs | 76,477,394 | 0 |
+| All 589 layouts and variants of xkeyboard-config 2.41, each with `us` as a second layout, 38 states | 169,805,140 | 0 |
+| 326 keymap texts written by hand (`tests/handwritten/cases.txt`), in forms the reference's own writer never produces, 436 states each: 253 read by both libraries and compared in full, 25 refused by both, 47 refused by the reference and read here (the README lists how this library is the more lenient), 1 with an `include` the reference resolves from the system's files; none read by the reference and refused here | 130,057,328 | 0 |
 | Every keysym in the named ranges and the Unicode range: name, name back to number, code point; every character to keysym; 57 odd names | 9,370,424 | 0 |
 | Case, where the reference turns a character into a character | 1,900 | 0 |
 | Compose: the tables of 16 locales (the 19 asked for less the 3 neither library finds), entry by entry, then two states fed every sequence and a 20,000-round random walk per table, comparing status, text and keysym after each keysym | 3,309,866 | 0 |
 | Compose: a file with every construct of the syntax (escapes, modifiers, duplicate, longer and shorter sequences, ten and eleven keysyms, malformed lines) | 117,182 | 0 |
 
-Left out of the first two rows, and counted by the test: 212,900 comparisons
-on keys where the case policy above can change the answer, and 132 states
-where libxkbcommon 1.6.0 itself computes a layout one past the last (a
-negative layout that is a multiple of the layout count).
+Left out of the first three rows, and counted by the test: 100,597
+comparisons where the case policy above can change the answer (a key whose
+type is worked out from the case of its first keysyms, where the two
+libraries case one of them differently; and, with Lock on, a keysym the two
+upper-case differently), and 2,172 states where libxkbcommon 1.6.0 itself
+computes a layout one past the last (a negative layout that is a multiple
+of the layout count).
+
+The hand-written texts were added after an independent review found a dozen
+places where valid text outside what the reference's writer emits was read
+differently (defaults set by `key.field`, a key given twice, a modifier map
+naming one key twice, groups that exist only through actions, and others).
+Each is now read as the reference reads it, and each has a case in that
+file.
 
 Compose follows the reference's rules where the format leaves room: a
 sequence given again replaces only what the new line gives (a string alone

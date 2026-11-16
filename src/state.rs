@@ -217,12 +217,14 @@ impl State {
     }
 
     /// The level of a key in `layout` under the current modifiers. `None`
-    /// for a key without symbols; a layout past the key's own is brought
-    /// into its range.
+    /// for a key without symbols and for a layout the key does not have:
+    /// ask with what [`key_layout`](Self::key_layout) answers.
     pub fn key_level(&self, keycode: Keycode, layout: u32) -> Option<u32> {
         let key = self.keymap.key(keycode)?;
-        let g = wrap_group(i64::from(layout), key.groups.len() as u32, key.out_of_range)?;
-        Some(self.entry(key, g).map_or(0, |e| e.level))
+        if layout as usize >= key.groups.len() {
+            return None;
+        }
+        Some(self.entry(key, layout).map_or(0, |e| e.level))
     }
 
     /// The keysyms a key gives now: usually one, none for an empty level or

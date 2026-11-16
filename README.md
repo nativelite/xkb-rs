@@ -26,8 +26,20 @@ keysyms and text. It does what a client uses libxkbcommon for.
   completed (with its text and keysym) or cancelled.
 
 Text from another process is never trusted: a malformed keymap is an `Error`
-with a line and a column, never a panic, and a keymap cannot ask for memory
-out of proportion to its size.
+with a line and a column, never a panic. A keymap cannot ask for memory or
+time out of proportion to its size, and no expression, however long or deep,
+can overflow the stack (nesting is cut off at 64 levels; a chain of
+operators is not nesting). A Compose file is read only if it is a regular
+file of at most 16 MiB (`compose::MAX_FILE_SIZE`), and so is each file it
+includes.
+
+Where a keymap says the same thing twice, or says something unusual, it is
+read as libxkbcommon 1.6 reads it: a key, type, interpret or LED map given
+again is merged with the earlier one (`augment`, `override` and `replace`
+before a statement are honoured), `key.field = value` and
+`indicator.field = value` set defaults for the statements after them, and
+so on down to the small print. `tests/handwritten/cases.txt` holds some 300
+such texts, each compared with the reference.
 
 **Not implemented:**
 
@@ -46,6 +58,32 @@ out of proportion to its size.
   out, as there. A line that cannot be read is left out without a report.
   In a Compose file that is not UTF-8 the lines with non-UTF-8 strings are
   left out (libxkbcommon rejects such a file whole).
+
+**More lenient than libxkbcommon.** Some text libxkbcommon refuses is read
+here. No case was found where both read a text and disagree about it; these
+are texts only this library reads:
+
+- Keymaps:
+  - more than four layouts on a key (up to 32), and levels named past
+    `Level8` (up to 2048);
+  - a field of a key, a type or an interpret that makes no sense (an unknown
+    name, a value of the wrong kind, symbols for a layout that has them
+    already) is passed over even where it is the last of its body, which is
+    the one place libxkbcommon refuses it; an unknown statement in a section
+    is passed over too;
+  - the names of the real modifiers in any case (`shift`, `MOD3`);
+  - an empty `{ }` level, `AnyOf()` with nothing in it, a `{ ... }` of
+    actions on one level;
+  - `\"` inside a string, `0X` for hexadecimal, a fraction after a number;
+  - a comma after the last item of a list, `;` and `,` used for each other
+    between the items of a body, no `;` after the keymap.
+- Compose files:
+  - a file with an `include` that cannot be read, or with more than ten
+    lines that cannot be read, still gives its good lines (libxkbcommon
+    refuses the file);
+  - result strings of 255 bytes and more are kept;
+  - malformed modifier lists before a keysym (`! None <e>`, `None Ctrl <a>`,
+    a modifier after the keysym) are read and ignored like well-formed ones.
 
 **Zero runtime dependencies** — `[dependencies]` is empty, and a guard fails
 the check if that ever changes.
@@ -112,13 +150,20 @@ assert_eq!(compose.utf8(), "é"); // type this instead of the key
   and Compose files, fixed seed).
 - Three complete keymaps (US, German, US with Russian) with the reference
   library's answers recorded beside them, checked on every platform.
+- Keymap text written by hand in the forms libxkbcommon's own writer never
+  produces (`tests/handwritten/cases.txt`), with the expected answers for
+  the main ones in `tests/odd_texts.rs`; text made to be costly (a chain of
+  200,000 operators read on a 2 MB stack; texts that used to take time in
+  proportion to the square of their size).
 - On Linux, a differential test against the system's `libxkbcommon.so.0`
   (loaded at run time, skipped where it is not installed): every layout and
   variant the system lists, every key, hundreds of modifier and layout
-  states, every keysym's name and character, and the Compose tables of
-  sixteen locales walked sequence by sequence. See `docs/decision.md` for
-  the numbers and for the one place this library deliberately differs (the
-  case of letters follows Unicode).
+  states, every keysym's name and character, the Compose tables of sixteen
+  locales walked sequence by sequence, and each of the hand-written texts
+  (both libraries must agree whether it is a keymap and, where it is, on
+  everything about it). See `docs/decision.md` for the numbers and for the
+  one place this library deliberately differs (the case of letters follows
+  Unicode).
 
 ## Develop
 

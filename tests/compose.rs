@@ -413,3 +413,63 @@ fn damaged_compose_files_never_panic() {
         }
     }
 }
+
+#[test]
+fn only_a_regular_file_of_a_sane_size_is_read() {
+    let dir = Dir::new("size");
+    let paths = Paths::system(locale_data(&dir));
+    // A file one byte past the limit (sparse: it takes no room on disk).
+    let big = dir.0.join("big.compose");
+    std::fs::File::create(&big)
+        .unwrap()
+        .set_len(xkb::compose::MAX_FILE_SIZE + 1)
+        .unwrap();
+    let e = Table::from_file(&big, "en_US.UTF-8", &paths).unwrap_err();
+    assert_eq!(e.kind(), std::io::ErrorKind::InvalidData, "{e}");
+    // A directory under the name of a Compose file.
+    let e = Table::from_file(&dir.0, "en_US.UTF-8", &paths).unwrap_err();
+    assert_eq!(e.kind(), std::io::ErrorKind::InvalidInput, "{e}");
+    // Included, either adds nothing, and the rest of the file is read.
+    let quoted = |p: &Path| p.to_string_lossy().replace('%', "%%").replace('\\', "\\\\");
+    let file = dir.write(
+        "main.compose",
+        &format!(
+            "include \"{}\"\ninclude \"{}\"\n<a> : \"rest\"\n",
+            quoted(&big),
+            quoted(&dir.0)
+        ),
+    );
+    assert_eq!(
+        texts(&Table::from_file(&file, "en_US.UTF-8", &paths).unwrap()),
+        ["rest"]
+    );
+    // A file exactly at the limit is read (it is all NULs: no sequences).
+    std::fs::File::create(&big)
+        .unwrap()
+        .set_len(xkb::compose::MAX_FILE_SIZE)
+        .unwrap();
+    assert!(Table::from_file(&big, "en_US.UTF-8", &paths)
+        .unwrap()
+        .is_empty());
+}
+
+#[test]
+fn modifier_keys_are_passed_over_and_the_level_five_keys_are_not() {
+    let t = Table::parse("<dead_acute> <e> : \"é\"\n");
+    let fed = |middle: u32| {
+        let mut s = State::new(t.clone());
+        s.feed(key("dead_acute"));
+        s.feed(Keysym(middle));
+        s.feed(key("e"));
+        s.status()
+    };
+    // Shift_L, Hyper_R, ISO_Lock, ISO_Last_Group_Lock, Mode_switch, Num_Lock.
+    for passed_over in [0xffe1, 0xffee, 0xfe01, 0xfe0f, 0xff7e, 0xff7f] {
+        assert_eq!(fed(passed_over), Status::Composed, "{passed_over:#x}");
+    }
+    // The keysyms on either side of those, the ISO_Level5 keys among them:
+    // each ends the sequence, and the `e` after it starts nothing.
+    for ends_it in [0xffe0, 0xffef, 0xfe00, 0xfe10, 0xfe11, 0xfe13, 0xff7d] {
+        assert_eq!(fed(ends_it), Status::Nothing, "{ends_it:#x}");
+    }
+}

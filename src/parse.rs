@@ -107,15 +107,12 @@ impl<'a> Lexer<'a> {
                                             _ => break,
                                         }
                                     }
-                                    // A NUL or a byte past 255 has no place
-                                    // in a name; it is dropped.
-                                    if (1..=0x7f).contains(&v) {
+                                    // The escape is one byte of the string
+                                    // (two of them can spell a character in
+                                    // UTF-8). A NUL or a value past 255 has
+                                    // no place in a name; it is dropped.
+                                    if (1..=0xff).contains(&v) {
                                         out.push(v as u8);
-                                    } else if let Some(c) =
-                                        char::from_u32(v).filter(|_| (0x80..=0xff).contains(&v))
-                                    {
-                                        let mut buf = [0; 4];
-                                        out.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
                                     }
                                 }
                                 other => out.push(other),
@@ -206,12 +203,16 @@ pub(crate) enum Expr<'a> {
     Index(Box<Expr<'a>>, Box<Expr<'a>>),
     /// `Name(arg, field=value, ...)`: an action, or an interpret's match.
     Call(&'a str, Vec<Expr<'a>>),
-    /// `!a` or `~a`
+    /// `!a`: the opposite of a yes or no.
     Not(Box<Expr<'a>>),
+    /// `~a`: the other bits of a mask, or the opposite of a yes or no.
+    Invert(Box<Expr<'a>>),
     /// `-a`
     Neg(Box<Expr<'a>>),
-    /// `a + b`, `a - b`, `a * b`, `a / b`
-    Bin(u8, Box<Expr<'a>>, Box<Expr<'a>>),
+    /// `a + b - c * d`: the first operand, then each operator with the
+    /// operand after it. A chain however long is one node: text from another
+    /// process cannot make the tree deep by making an expression long.
+    Ops(Box<Expr<'a>>, Vec<(u8, Expr<'a>)>),
     /// `[ a, b, ... ]`
     List(Vec<Expr<'a>>),
     /// `{ a, b, ... }` inside a list: several keysyms on one level.
@@ -248,6 +249,28 @@ pub(crate) enum Stmt<'a> {
     ModMap(&'a str, Vec<Expr<'a>>),
 }
 
+/// What a statement does to an earlier one for the same thing: the word
+/// before it (`augment`, `override`, `replace`), or none.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub(crate) enum Merge {
+    /// No word: the later statement wins, as with `override`.
+    #[default]
+    Default,
+    /// The earlier statement wins where both say something.
+    Augment,
+    Override,
+    /// The later statement replaces the earlier one whole.
+    Replace,
+}
+
+/// A statement of a section, where it starts, and its merge mode.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Placed<'a> {
+    pub pos: Pos,
+    pub merge: Merge,
+    pub stmt: Stmt<'a>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Section {
     Keycodes,
@@ -259,7 +282,7 @@ pub(crate) enum Section {
 /// A keymap's sections, each a list of positioned statements.
 #[derive(Debug, Default)]
 pub(crate) struct File<'a> {
-    pub sections: Vec<(Section, Vec<(Pos, Stmt<'a>)>)>,
+    pub sections: Vec<(Section, Vec<Placed<'a>>)>,
 }
 
 /// How deep expressions and blocks may nest: a keymap needs three or four
@@ -343,22 +366,30 @@ impl<'a> Parser<'a> {
 
     fn expr(&mut self) -> Result<Expr<'a>, Error> {
         self.deeper()?;
-        let mut lhs = self.unary()?;
+        let first = self.unary()?;
+        let mut rest = Vec::new();
         while let Tok::Punct(op @ (b'+' | b'-' | b'*' | b'/')) = self.tok {
             self.bump()?;
-            let rhs = self.unary()?;
-            lhs = Expr::Bin(op, Box::new(lhs), Box::new(rhs));
+            rest.push((op, self.unary()?));
         }
         self.depth -= 1;
-        Ok(lhs)
+        Ok(if rest.is_empty() {
+            first
+        } else {
+            Expr::Ops(Box::new(first), rest)
+        })
     }
 
     fn unary(&mut self) -> Result<Expr<'a>, Error> {
         self.deeper()?;
         let e = match self.tok {
-            Tok::Punct(b'!' | b'~') => {
+            Tok::Punct(b'!') => {
                 self.bump()?;
                 Expr::Not(Box::new(self.unary()?))
+            }
+            Tok::Punct(b'~') => {
+                self.bump()?;
+                Expr::Invert(Box::new(self.unary()?))
             }
             Tok::Punct(b'-') => {
                 self.bump()?;
@@ -464,10 +495,11 @@ impl<'a> Parser<'a> {
         Ok(out)
     }
 
-    fn statement(&mut self) -> Result<Stmt<'a>, Error> {
+    fn statement(&mut self) -> Result<Placed<'a>, Error> {
         let pos = self.pos;
-        // A merge mode before a statement changes nothing in a complete
-        // keymap, where nothing is defined twice.
+        // A merge mode before a statement says what happens where the same
+        // thing was defined before.
+        let mut merge = Merge::Default;
         while let Tok::Ident(w) = self.tok {
             if is(w, "include") {
                 return err(
@@ -475,14 +507,18 @@ impl<'a> Parser<'a> {
                     "`include` needs the keymap's source files; a complete keymap has none",
                 );
             }
-            if ["augment", "override", "replace", "alternate"]
-                .iter()
-                .any(|k| is(w, k))
-            {
-                self.bump()?;
+            merge = if is(w, "augment") {
+                Merge::Augment
+            } else if is(w, "override") {
+                Merge::Override
+            } else if is(w, "replace") {
+                Merge::Replace
+            } else if is(w, "alternate") {
+                Merge::Default
             } else {
                 break;
-            }
+            };
+            self.bump()?;
         }
         let stmt = match self.tok {
             Tok::Ident(w) if is(w, "virtual_modifiers") => {
@@ -581,7 +617,7 @@ impl<'a> Parser<'a> {
             _ => Stmt::Item(self.item()?),
         };
         self.expect(b';')?;
-        Ok(stmt)
+        Ok(Placed { pos, merge, stmt })
     }
 
     /// A statement that began with a keyword but is a plain `keyword.field =
@@ -650,7 +686,11 @@ impl<'a> Parser<'a> {
         let mut file = File::default();
         self.flags()?;
         let word = self.ident()?;
-        if !is(word, "xkb_keymap") {
+        // The three words mean the same: a file of all the sections.
+        if !["xkb_keymap", "xkb_semantics", "xkb_layout"]
+            .iter()
+            .any(|k| is(word, k))
+        {
             return err(self.pos, "expected `xkb_keymap`");
         }
         if let Tok::Str(_) = self.tok {
@@ -689,15 +729,16 @@ impl<'a> Parser<'a> {
             match section {
                 None => self.skip_block()?,
                 Some(section) => {
-                    if file.sections.iter().any(|(s, _)| *s == section) {
-                        return err(pos, "a section given twice");
-                    }
                     let mut statements = Vec::new();
                     while !self.eat(b'}')? {
-                        let pos = self.pos;
-                        statements.push((pos, self.statement()?));
+                        statements.push(self.statement()?);
                     }
-                    file.sections.push((section, statements));
+                    // Of a section given more than once, the first counts;
+                    // the others are read (they must still be well formed)
+                    // and dropped.
+                    if !file.sections.iter().any(|(s, _)| *s == section) {
+                        file.sections.push((section, statements));
+                    }
                 }
             }
             self.expect(b';')?;
@@ -759,7 +800,7 @@ mod tests {
             .remove(0)
             .1
             .into_iter()
-            .map(|(_, s)| s)
+            .map(|placed| placed.stmt)
             .collect()
     }
 
@@ -886,9 +927,14 @@ mod tests {
             fails("xkb_keymap { }; more").message,
             "text after the keymap"
         );
+        assert!(
+            parse("xkb_semantics { xkb_types { }; xkb_types { type \"T\" { }; }; };")
+                .is_ok_and(|f| f.sections.len() == 1 && f.sections[0].1.is_empty()),
+            "the first of a section given twice counts"
+        );
         assert_eq!(
-            fails("xkb_keymap { xkb_types { }; xkb_types { }; };").message,
-            "a section given twice"
+            fails("xkb_keymap { xkb_types { }; xkb_types { ( }; };").message,
+            "expected a value"
         );
         assert!(fails("xkb_keymap { xkb_symbols { include \"us\" }; };")
             .message
@@ -908,6 +954,31 @@ mod tests {
             "!".repeat(100_000)
         );
         assert_eq!(fails(&deep).message, "nested too deeply");
+    }
+
+    #[test]
+    fn a_long_chain_of_operators_is_one_node_and_merge_modes_are_kept() {
+        let s = stmts("a = 1 + 2 * 3 - x; augment key <A> { [ a ] }; replace key <A> { [ b ] };");
+        let Stmt::Item(i) = &s[0] else { panic!() };
+        assert_eq!(
+            i.value,
+            Expr::Ops(
+                Box::new(Expr::Int(1)),
+                vec![
+                    (b'+', Expr::Int(2)),
+                    (b'*', Expr::Int(3)),
+                    (b'-', Expr::Ident("x"))
+                ]
+            )
+        );
+        let src = "xkb_keymap { xkb_symbols { augment key <A> { [ a ] }; replace key <A> { [ b ] }; key <A> { }; }; };";
+        let file = parse(src).unwrap();
+        let merges: Vec<Merge> = file.sections[0].1.iter().map(|p| p.merge).collect();
+        assert_eq!(merges, [Merge::Augment, Merge::Replace, Merge::Default]);
+        // Octal escapes are bytes: two of them spell one character.
+        let s = stmts(r#"name[1] = "T\303\251\0\777";"#);
+        let Stmt::Item(i) = &s[0] else { panic!() };
+        assert_eq!(i.value, Expr::Str("T\u{e9}".into()));
     }
 
     #[test]

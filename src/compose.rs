@@ -31,6 +31,35 @@ const MAX_INCLUDES: u32 = 64;
 /// The longest sequence a Compose file may define; longer ones are left out.
 const MAX_SEQUENCE: usize = 10;
 
+/// The largest file read as a Compose file, or as one of the locale data's
+/// lists: 16 MiB. The largest Compose file X11 ships is under 1 MiB; a path
+/// that leads to something endless must not be read to the end.
+pub const MAX_FILE_SIZE: u64 = 16 * 1024 * 1024;
+
+/// Read a file of at most [`MAX_FILE_SIZE`] bytes. Only a regular file is
+/// opened: a pipe, a device or a directory under the name of a Compose file
+/// is an error, not something to wait on or read without end.
+fn read_file(path: &Path) -> io::Result<Vec<u8>> {
+    use std::io::Read;
+    if !std::fs::metadata(path)?.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("{} is not a regular file", path.display()),
+        ));
+    }
+    let mut bytes = Vec::new();
+    std::fs::File::open(path)?
+        .take(MAX_FILE_SIZE + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_FILE_SIZE {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{} is larger than a Compose file may be", path.display()),
+        ));
+    }
+    Ok(bytes)
+}
+
 /// Where Compose files are looked for.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Paths {
@@ -77,7 +106,7 @@ impl Paths {
     /// right`. Returns the other column of the first line whose `left`
     /// (or, with `by_right`, `right`) is `name`.
     fn lookup(&self, file: &str, name: &str, by_right: bool) -> Option<String> {
-        let bytes = std::fs::read(self.locale_dir.join(file)).ok()?;
+        let bytes = read_file(&self.locale_dir.join(file)).ok()?;
         for line in bytes.split(|&b| b == b'\n') {
             let line = String::from_utf8_lossy(line);
             let line = line.split('#').next().unwrap_or("");
@@ -151,7 +180,7 @@ impl Table {
             paths.locale_file(&locale),
         ];
         for path in candidates.into_iter().flatten() {
-            if let Ok(bytes) = std::fs::read(&path) {
+            if let Ok(bytes) = read_file(&path) {
                 let mut loader = Loader::new(Some(paths), &locale);
                 loader.text(&bytes);
                 return Ok(loader.finish());
@@ -166,7 +195,7 @@ impl Table {
     /// The table of one Compose file. `locale` is what `%L` in an `include`
     /// stands for.
     pub fn from_file(path: &Path, locale: &str, paths: &Paths) -> io::Result<Table> {
-        let bytes = std::fs::read(path)?;
+        let bytes = read_file(path)?;
         let locale = paths.resolve_locale(locale);
         let mut loader = Loader::new(Some(paths), &locale);
         loader.text(&bytes);
@@ -424,7 +453,7 @@ impl<'p> Loader<'p> {
         if let Tok::Ident(b"include") = tok {
             if self.depth < MAX_INCLUDE_DEPTH && self.includes < MAX_INCLUDES {
                 self.includes += 1;
-                if let Some(bytes) = lex.include_path(self).and_then(|p| std::fs::read(p).ok()) {
+                if let Some(bytes) = lex.include_path(self).and_then(|p| read_file(&p).ok()) {
                     self.depth += 1;
                     self.text(&bytes);
                     self.depth -= 1;
@@ -565,8 +594,10 @@ pub struct State {
 /// Whether a keysym is a modifier key's: these never take part in a
 /// sequence (Shift is pressed in the middle of many).
 fn is_modifier(sym: Keysym) -> bool {
-    // Shift_L to Hyper_R, ISO_Lock to ISO_Level5_Lock, Mode_switch, Num_Lock.
-    matches!(sym.0, 0xffe1..=0xffee | 0xfe01..=0xfe13 | 0xff7e | 0xff7f)
+    // Shift_L to Hyper_R, ISO_Lock to ISO_Last_Group_Lock, Mode_switch,
+    // Num_Lock: the keysyms libxkbcommon passes over. The ISO_Level5 keys
+    // are not among them.
+    matches!(sym.0, 0xffe1..=0xffee | 0xfe01..=0xfe0f | 0xff7e | 0xff7f)
 }
 
 impl State {
