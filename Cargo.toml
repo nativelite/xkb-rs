@@ -1,0 +1,17 @@
+[package]
+name = "nativelite-xkb"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "XKB keymaps for a Wayland client - keymap text parsing, keyboard state, keysyms and Compose - using only the Rust standard library."
+license = "MIT"
+repository = "https://github.com/nativelite/xkb-rs"
+keywords = ["xkb", "keyboard", "keymap", "wayland", "nativelite"]
+categories = ["os", "parser-implementations"]
+
+# nativelite core rule: ZERO third-party dependencies. Do not add to this.
+[dependencies]
+
+[lib]
+name = "xkb"
+path = "src/lib.rs"

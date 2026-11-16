@@ -1,0 +1,5 @@
+tests/fixtures/* text eol=lf
+*.rs text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
