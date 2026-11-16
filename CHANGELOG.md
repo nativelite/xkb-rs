@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-16
+
 ### Added
 - `Keysym`: names to numbers and back (the keysym list of libxkbcommon
   1.6.0, the `U<code point>` and `0x<number>` forms), keysym to character

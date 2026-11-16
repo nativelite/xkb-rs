@@ -4,6 +4,13 @@ XKB keymaps for a Wayland client, built on the Rust standard library alone.
 One concern: turn the keycodes and modifier masks a compositor sends into
 keysyms and text. It does what a client uses libxkbcommon for.
 
+Crate `nativelite-xkb` on crates.io, library name `xkb`:
+
+```toml
+[dependencies]
+xkb = { package = "nativelite-xkb", version = "0.1" }
+```
+
 - `Keymap` reads the keymap text a compositor sends over `wl_keyboard.keymap`
   (the `xkb_keymap { ... }` format libxkbcommon and `xkbcomp` write): key
   names and aliases, key types with their level maps and preserved
